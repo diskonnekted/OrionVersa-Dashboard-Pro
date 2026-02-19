@@ -1,0 +1,44 @@
+### OS / Editor junk
+Thumbs.db
+.DS_Store
+*.log
+
+### Build/server artifacts
+.phpunit.cache/
+
+### Local data, caches, and large GIS assets (keep repo light)
+tmp/
+Gerakan Tanah/
+TANAH JATENG/
+[LapakGIS.com]*/
+[LapakGIS.com] DEM SRTM 90m Versi 4/
+[LapakGIS.com] DAS INDONESIA/
+
+### Archives and large downloads
+*.zip
+*.rar
+*.7z
+*.kmz
+
+### Shapefile datasets (we use converted GeoJSON instead)
+*.shp
+*.shx
+*.dbf
+*.sbn
+*.sbx
+*.prj
+*.cpg
+*.shp.xml
+
+### Raster/GeoTIFF and sidecars
+*.tif
+*.tiff
+*.ovr
+*.tfw
+*.aux.xml
+
+### Keep GeoJSONs, images, and application code tracked
+!geojson/**/*.geojson
+!img/**
+!logo/**
+!orion/**
