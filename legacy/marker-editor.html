@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Marker Geosiana - Peta Desa</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <link rel="stylesheet" href="assets/map-styles.css">
+  <style>
+      /* Load Geosiana fonts */
+      @font-face {
+        font-family: 'Geosiana Default';
+        src: url('./assets/fonts/geosiana-marker_default.ttf') format('truetype');
+        font-display: swap;
+      }
+      
+      @font-face {
+        font-family: 'Geosiana Extra';
+        src: url('./assets/fonts/geosiana-marker_extra.ttf') format('truetype');
+        font-display: swap;
+      }
+      
+      @font-face {
+        font-family: 'Geosiana Forestry';
+        src: url('./assets/fonts/geosiana-marker_forestry.ttf') format('truetype');
+        font-display: swap;
+      }
+      
+      @font-face {
+        font-family: 'Geosiana Animal';
+        src: url('./assets/fonts/geosiana-marker_animal.ttf') format('truetype');
+        font-display: swap;
+      }
+      
+      * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #0ea5e9 0, #0f172a 40%, #020617 100%);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1400px;
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow:
+        0 24px 80px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 0;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.9);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .sidebar {
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.7);
+      border-right: 1px solid rgba(148, 163, 184, 0.2);
+      overflow-y: auto;
+    }
+
+    .map-container {
+      position: relative;
+      height: 100%;
+    }
+
+    #editorMap {
+      width: 100%;
+      height: 100%;
+      border-radius: 0 0 24px 0;
+    }
+
+    .control-panel {
+      margin-bottom: 24px;
+    }
+
+    .control-panel h3 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: #e5e7eb;
+    }
+
+    .marker-type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .marker-type-btn {
+      padding: 12px;
+      border: 2px solid rgba(148, 163, 184, 0.3);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #e5e7eb;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .marker-type-btn:hover {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .marker-type-btn.active {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .marker-type-btn .icon {
+      font-family: 'Geosiana Default';
+      font-size: 24px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* Font preview styles */
+    #font-preview.default-font { 
+      font-family: 'Geosiana Default', sans-serif;
+      font-size: 32px !important;
+      font-weight: normal !important;
+    }
+    #font-preview.extra-font { 
+      font-family: 'Geosiana Extra', sans-serif;
+      font-size: 32px !important;
+      font-weight: normal !important;
+    }
+    #font-preview.forestry-font { 
+      font-family: 'Geosiana Forestry', sans-serif;
+      font-size: 32px !important;
+      font-weight: normal !important;
+    }
+    #font-preview.animal-font { 
+      font-family: 'Geosiana Animal', sans-serif;
+      font-size: 32px !important;
+      font-weight: normal !important;
+    }
+
+    /* Dropdown styles */
+    .char-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .char-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Marker styles with proper font families - override Leaflet styles */
+    .geosiana-marker {
+      font-family: 'Geosiana Default', sans-serif !important;
+      font-size: 32px !important;
+      font-weight: normal !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .geosiana-marker.extra {
+      font-family: 'Geosiana Extra', sans-serif !important;
+    }
+
+    .geosiana-marker.forestry {
+      font-family: 'Geosiana Forestry', sans-serif !important;
+    }
+
+    .geosiana-marker.animal {
+      font-family: 'Geosiana Animal', sans-serif !important;
+    }
+
+    /* Target the actual div element that Leaflet creates */
+    .leaflet-marker-icon .geosiana-marker {
+      font-family: 'Geosiana Default', sans-serif !important;
+      font-size: 32px !important;
+      line-height: 1 !important;
+      width: 40px !important;
+      height: 40px !important;
+    }
+
+    .geosiana-marker.blue {
+      color: #3b82f6 !important;
+      text-shadow: 0 0 3px rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .geosiana-marker.red {
+      color: #ef4444 !important;
+      text-shadow: 0 0 3px rgba(239, 68, 68, 0.5) !important;
+    }
+
+    .geosiana-marker.yellow {
+      color: #eab308 !important;
+      text-shadow: 0 0 3px rgba(234, 179, 8, 0.5) !important;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    .form-group textarea {
+      height: 80px;
+      resize: vertical;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.2);
+      color: #e5e7eb;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.3);
+    }
+
+    .markers-list {
+      margin-top: 24px;
+    }
+
+    .markers-list h3 {
+      margin-bottom: 16px;
+    }
+
+    .marker-item {
+      padding: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    .marker-item .icon {
+      font-family: 'Geosiana Default';
+      font-size: 20px;
+      margin-right: 8px;
+    }
+
+    .marker-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .marker-actions .btn {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+
+    .coordinates-display {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>🌍 Editor Marker Geosiana - Peta Desa</h1>
+      <p>Tambahkan dan atur marker untuk peta desa menggunakan font Geosiana</p>
+    </header>
+
+    <aside class="sidebar">
+      <div class="control-panel">
+        <h3>🎯 Tipe Marker</h3>
+        <div class="marker-type-grid">
+          <button class="marker-type-btn active" data-type="default" data-char="A">
+            <span class="icon">A</span>
+            Default
+          </button>
+          <button class="marker-type-btn" data-type="extra" data-char="B">
+            <span class="icon">B</span>
+            Extra
+          </button>
+          <button class="marker-type-btn" data-type="forestry" data-char="C">
+            <span class="icon">C</span>
+            Forestry
+          </button>
+          <button class="marker-type-btn" data-type="animal" data-char="D">
+            <span class="icon">D</span>
+            Animal
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label for="marker-char">Karakter Icon:</label>
+          <select id="marker-char" class="char-select">
+            <option value="A" selected>A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+            <option value="I">I</option>
+            <option value="J">J</option>
+            <option value="K">K</option>
+            <option value="L">L</option>
+          </select>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+            <span id="char-display-default" class="char-display" style="display: inline;">A-Z, 0-9, !@#$% (huruf/angka)</span>
+            <span id="char-display-extra" class="char-display" style="display: none;">A-F: Simbol Khusus</span>
+            <span id="char-display-forestry" class="char-display" style="display: none;">A-L: Simbol Kehutanan</span>
+            <span id="char-display-animal" class="char-display" style="display: none;">A-L: Simbol Hewan</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="marker-color">Warna Marker:</label>
+          <select id="marker-color" class="char-select">
+            <option value="blue" selected>Biru (Default)</option>
+            <option value="red">Merah</option>
+            <option value="yellow">Kuning</option>
+          </select>
+        </div>
+
+        <!-- Preview Font -->
+        <div class="form-group">
+          <label>Preview Font:</label>
+          <div id="font-preview" style="
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(148, 163, 184, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 10px auto;
+          ">
+            <span id="preview-char">A</span>
+          </div>
+          <div style="text-align: center; font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+            <span id="preview-font-name">Geosiana Default</span>
+          </div>
+        </div>
+
+        <!-- Font Test Section -->
+        <div class="form-group" style="border-top: 1px solid rgba(148, 163, 184, 0.3); padding-top: 16px; margin-top: 16px;">
+          <label style="color: #ef4444;">Debug Font Loading:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+            <div style="font-family: 'Geosiana Default'; font-size: 20px; padding: 8px; background: rgba(15, 23, 42, 0.3); border-radius: 4px;">
+              Default: ABC
+            </div>
+            <div style="font-family: 'Geosiana Extra'; font-size: 20px; padding: 8px; background: rgba(15, 23, 42, 0.3); border-radius: 4px;">
+              Extra: ABC
+            </div>
+            <div style="font-family: 'Geosiana Forestry'; font-size: 20px; padding: 8px; background: rgba(15, 23, 42, 0.3); border-radius: 4px;">
+              Forestry: ABC
+            </div>
+            <div style="font-family: 'Geosiana Animal'; font-size: 20px; padding: 8px; background: rgba(15, 23, 42, 0.3); border-radius: 4px;">
+              Animal: ABC
+            </div>
+          </div>
+          <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 8px;">
+            Jika font tidak tampil, pastikan file font terinstall di sistem atau cek console browser untuk error
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="marker-name">Nama Marker:</label>
+          <input type="text" id="marker-name" placeholder="Contoh: Pos Pantau 1">
+        </div>
+
+        <div class="form-group">
+          <label for="marker-desc">Deskripsi:</label>
+          <textarea id="marker-desc" placeholder="Deskripsi marker..."></textarea>
+        </div>
+
+        <button id="save-marker-btn" class="btn btn-primary" style="width: 100%;">
+          💾 Simpan Marker
+        </button>
+
+        <div style="margin: 20px 0; border-top: 1px solid rgba(148, 163, 184, 0.2);"></div>
+
+        <button id="export-btn" class="btn btn-secondary" style="width: 100%; margin-bottom: 12px;">
+          📤 Export ke GeoJSON
+        </button>
+
+        <button id="clear-all-btn" class="btn btn-secondary" style="width: 100%;">
+          🗑️ Hapus Semua
+        </button>
+      </div>
+
+      <div class="markers-list">
+        <h3>📌 Marker Tersimpan</h3>
+        <div id="markers-container">
+          <p style="color: #94a3b8; text-align: center; padding: 20px;">
+            Belum ada marker. Klik pada peta untuk menambahkan.
+          </p>
+        </div>
+
+
+      </div>
+    </aside>
+
+    <main class="map-container">
+      <div id="editorMap"></div>
+      <div class="coordinates-display" id="coordinates-display">
+        Lat: -7.3911, Lng: 109.6632
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  
+  <script>
+    // Variabel global
+    let editorMap;
+    let currentMarker = null;
+    let markers = [];
+    let selectedType = 'default';
+    let selectedChar = 'A';
+    let selectedColor = 'blue';
+    let useIcon = false;
+    let selectedIcon = '';
+
+    // Sistem kategori ancaman dengan mapping icon
+    const threatCategories = {
+      'geosiana': { name: 'Geosiana Font', type: 'font' },
+      'gas_beracun': { name: 'Gas Beracun', type: 'icon', icon: 'biohazard-solid-full.svg' },
+      'radiasi': { name: 'Radiasi', type: 'icon', icon: 'radiation-solid-full.svg' },
+      'gunung_api': { name: 'Gunung Api', type: 'icon', icon: 'volcano-solid-full.svg' },
+      'longsor': { name: 'Longsor', type: 'icon', icon: 'hill-rockslide-solid-full.svg' },
+      'banjir': { name: 'Banjir', type: 'icon', icon: 'house-flood-water-solid-full.svg' },
+      'kebakaran': { name: 'Kebakaran', type: 'icon', icon: 'house-fire-solid-full.svg' },
+      'angin_kencang': { name: 'Angin Kencang', type: 'icon', icon: 'wind-solid-full.svg' },
+      'badai': { name: 'Badai/Petir', type: 'icon', icon: 'cloud-bolt-solid-full.svg' },
+      'hujan_deras': { name: 'Hujan Deras', type: 'icon', icon: 'cloud-showers-heavy-solid-full.svg' }
+    };
+
+    // Konfigurasi peta
+    const banjarnegaraCenter = { lat: -7.3911, lng: 109.6632 };
+    const banjarnegaraBBox = {
+      north: -7.12,
+      south: -7.58,
+      east: 109.92,
+      west: 109.38
+    };
+
+    // Inisialisasi peta
+    function initEditorMap() {
+      editorMap = L.map('editorMap', {
+        center: [banjarnegaraCenter.lat, banjarnegaraCenter.lng],
+        zoom: 12,
+        minZoom: 9,
+        maxZoom: 18
+      });
+
+      // Base layers
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      });
+
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles © Esri'
+      });
+
+      osmLayer.addTo(editorMap);
+
+      // Layer control
+      L.control.layers({
+        'OpenStreetMap': osmLayer,
+        'Satellite': satelliteLayer
+      }, {}, { position: 'topright' }).addTo(editorMap);
+
+      // Event untuk menampilkan koordinat
+      editorMap.on('mousemove', function(e) {
+        const coords = e.latlng;
+        document.getElementById('coordinates-display').textContent = 
+          `Lat: ${coords.lat.toFixed(4)}, Lng: ${coords.lng.toFixed(4)}`;
+      });
+
+      // Event click untuk menambahkan marker
+      editorMap.on('click', function(e) {
+        addNewMarker(e.latlng);
+      });
+
+      // Load existing markers from localStorage
+      loadMarkers();
+    }
+
+    // Fungsi untuk membuat custom marker dengan simbol yang benar
+    function createGeosianaMarker(iconChar, className = '') {
+      
+      // Jika menggunakan font Geosiana
+      const fontType = className.includes('extra') ? 'extra' : 
+                      className.includes('forestry') ? 'forestry' :
+                      className.includes('animal') ? 'animal' : 'default';
+      
+      // Gunakan mapping karakter yang sesuai
+      const charMap = geosianaCharMap[fontType];
+      const displayChar = charMap[iconChar] || charMap['A'] || iconChar;
+      
+      // Dapatkan font family yang sesuai
+      const fontFamily = fontType === 'extra' ? 'Geosiana Extra' :
+                        fontType === 'forestry' ? 'Geosiana Forestry' :
+                        fontType === 'animal' ? 'Geosiana Animal' : 'Geosiana Default';
+      
+      return L.divIcon({
+        className: 'geosiana-marker ' + className + ' ' + selectedColor,
+        html: `<div style="font-family: '${fontFamily}', sans-serif; font-size: 32px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; text-align: center;">${displayChar}</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+      });
+    }
+
+
+
+    // Tambahkan marker baru
+    function addNewMarker(latlng) {
+      // Hapus marker sebelumnya jika ada
+      if (currentMarker) {
+        editorMap.removeLayer(currentMarker);
+      }
+
+      // Buat marker sementara
+      currentMarker = L.marker(latlng, {
+        icon: createGeosianaMarker(selectedChar, selectedType),
+        draggable: true
+      }).addTo(editorMap);
+
+      // Update popup content based on marker type
+      if (useIcon && selectedIcon) {
+        currentMarker.bindPopup(`
+          <div class="custom-popup">
+            <h3>Marker Baru</h3>
+            <p><strong>Type:</strong> Icon ${threatCategories[selectedType].name}</p>
+            <p><strong>Icon:</strong> ${selectedIcon}</p>
+            <p><small>Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)}</small></p>
+          </div>
+        `);
+      } else {
+        currentMarker.bindPopup(`
+          <div class="custom-popup">
+            <h3>Marker Baru</h3>
+            <p><strong>Type:</strong> ${selectedType}</p>
+            <p><strong>Char:</strong> ${selectedChar}</p>
+            <p><small>Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)}</small></p>
+          </div>
+        `);
+      }
+
+      // Event drag untuk marker
+      currentMarker.on('drag', function(e) {
+        const coords = e.target.getLatLng();
+        document.getElementById('coordinates-display').textContent = 
+          `Lat: ${coords.lat.toFixed(4)}, Lng: ${coords.lng.toFixed(4)}`;
+      });
+
+      // Update form coordinates
+      document.getElementById('coordinates-display').textContent = 
+        `Lat: ${latlng.lat.toFixed(4)}, Lng: ${latlng.lng.toFixed(4)}`;
+    }
+
+    // Simpan marker
+    function saveMarker() {
+      if (!currentMarker) {
+        alert('Silakan klik pada peta untuk menambahkan marker terlebih dahulu!');
+        return;
+      }
+
+      const name = document.getElementById('marker-name').value || 'Unnamed Marker';
+      const desc = document.getElementById('marker-desc').value || '';
+      const coords = currentMarker.getLatLng();
+
+      const markerData = {
+        id: Date.now(),
+        type: selectedType,
+        char: selectedChar,
+        name: name,
+        description: desc,
+        lat: coords.lat,
+        lng: coords.lng,
+        timestamp: new Date().toISOString(),
+        useIcon: useIcon,
+        icon: selectedIcon,
+        color: selectedColor
+      };
+
+      markers.push(markerData);
+      saveMarkersToStorage();
+      renderMarkersList();
+      addPersistentMarker(markerData);
+
+      // Reset form
+      document.getElementById('marker-name').value = '';
+      document.getElementById('marker-desc').value = '';
+      
+      // Hapus marker sementara
+      editorMap.removeLayer(currentMarker);
+      currentMarker = null;
+
+      alert('Marker berhasil disimpan!');
+    }
+
+    // Tambahkan marker permanen ke peta
+    function addPersistentMarker(markerData) {
+      // Tentukan parameter untuk createGeosianaMarker
+      const markerChar = markerData.char || 'A';
+      const markerClass = markerData.useIcon ? 'icon_' + markerData.type : markerData.type;
+      
+      const marker = L.marker([markerData.lat, markerData.lng], {
+        icon: createGeosianaMarker(markerChar, markerClass)
+      }).addTo(editorMap);
+
+      // Tentukan konten popup berdasarkan tipe marker
+      let popupContent = `
+        <div class="custom-popup">
+          <h3>${markerData.name}</h3>
+          <p><strong>Type:</strong> ${markerData.type}</p>
+      `;
+      
+      if (markerData.useIcon && markerData.icon) {
+        popupContent += `<p><strong>Icon:</strong> ${markerData.icon}</p>`;
+      } else {
+        popupContent += `<p><strong>Char:</strong> ${markerData.char}</p>`;
+      }
+      
+      popupContent += `
+          <p>${markerData.description}</p>
+          <p><small>Lat: ${markerData.lat.toFixed(4)}, Lng: ${markerData.lng.toFixed(4)}</small></p>
+          <button onclick="deleteMarker(${markerData.id})" class="btn btn-secondary" style="margin-top: 10px;">
+            Hapus
+          </button>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      marker.markerData = markerData;
+    }
+
+    // Render daftar marker
+    function renderMarkersList() {
+      const container = document.getElementById('markers-container');
+      
+      if (markers.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">Belum ada marker. Klik pada peta untuk menambahkan.</p>';
+        return;
+      }
+
+      container.innerHTML = markers.map(marker => `
+        <div class="marker-item">
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <span class="icon">${marker.char}</span>
+            <strong>${marker.name}</strong>
+          </div>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px;">
+            ${marker.lat.toFixed(4)}, ${marker.lng.toFixed(4)}
+          </div>
+          <div class="marker-actions">
+            <button class="btn btn-secondary" onclick="zoomToMarker(${marker.lat}, ${marker.lng})">
+              🔍
+            </button>
+            <button class="btn btn-secondary" onclick="deleteMarker(${marker.id})">
+              🗑️
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Zoom ke marker
+    function zoomToMarker(lat, lng) {
+      editorMap.setView([lat, lng], 15);
+    }
+
+    // Hapus marker
+    function deleteMarker(id) {
+      if (confirm('Apakah Anda yakin ingin menghapus marker ini?')) {
+        markers = markers.filter(m => m.id !== id);
+        saveMarkersToStorage();
+        renderMarkersList();
+        location.reload(); // Simple reload untuk clear markers dari peta
+      }
+    }
+
+    // Hapus semua marker
+    function clearAllMarkers() {
+      if (confirm('Apakah Anda yakin ingin menghapus SEMUA marker? Tindakan ini tidak dapat dibatalkan!')) {
+        markers = [];
+        localStorage.removeItem('geosianaMarkers');
+        renderMarkersList();
+        location.reload();
+      }
+    }
+
+    // Export ke GeoJSON
+    function exportToGeoJSON() {
+      if (markers.length === 0) {
+        alert('Tidak ada marker untuk di-export!');
+        return;
+      }
+
+      const geojson = {
+        type: 'FeatureCollection',
+        features: markers.map(marker => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [marker.lng, marker.lat]
+          },
+          properties: {
+            id: marker.id,
+            name: marker.name,
+            description: marker.description,
+            type: marker.type,
+            char: marker.char,
+            timestamp: marker.timestamp
+          }
+        }))
+      };
+
+      const dataStr = JSON.stringify(geojson, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = 'geosiana-markers.geojson';
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+
+    // Simpan ke localStorage
+    function saveMarkersToStorage() {
+      localStorage.setItem('geosianaMarkers', JSON.stringify(markers));
+    }
+
+    // Load dari localStorage
+    function loadMarkers() {
+      const saved = localStorage.getItem('geosianaMarkers');
+      if (saved) {
+        markers = JSON.parse(saved);
+        markers.forEach(addPersistentMarker);
+        renderMarkersList();
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      initEditorMap();
+
+      // Tipe marker selection
+      document.querySelectorAll('.marker-type-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+        document.querySelectorAll('.marker-type-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.icon-type-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        selectedType = this.dataset.type;
+        selectedChar = this.dataset.char;
+        document.getElementById('marker-char').value = selectedChar;
+        useIcon = false;
+        
+        // Update karakter display berdasarkan tipe font
+        document.querySelectorAll('.char-display').forEach(el => el.style.display = 'none');
+        document.getElementById('char-display-' + selectedType).style.display = 'inline';
+        
+        // Update dropdown options berdasarkan font type
+        updateCharDropdown();
+        
+        // Update font preview
+        updateFontPreview();
+      });
+      });
+
+
+
+      // Dropdown karakter custom
+      document.getElementById('marker-char').addEventListener('change', function(e) {
+        selectedChar = e.target.value;
+        updateFontPreview();
+        if (currentMarker) {
+          editorMap.removeLayer(currentMarker);
+          currentMarker = null;
+        }
+      });
+
+      // Dropdown warna marker
+      document.getElementById('marker-color').addEventListener('change', function(e) {
+        selectedColor = e.target.value;
+        updateFontPreview();
+        if (currentMarker) {
+          editorMap.removeLayer(currentMarker);
+          currentMarker = null;
+        }
+      });
+
+      // Save marker
+      document.getElementById('save-marker-btn').addEventListener('click', saveMarker);
+
+      // Export
+      document.getElementById('export-btn').addEventListener('click', exportToGeoJSON);
+
+      // Clear all
+      document.getElementById('clear-all-btn').addEventListener('click', clearAllMarkers);
+    });
+
+    // Mapping karakter untuk setiap font Geosiana (menggunakan karakter font asli)
+    const geosianaCharMap = {
+      'default': {
+        'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F',
+        'G': 'G', 'H': 'H', 'I': 'I', 'J': 'J', 'K': 'K', 'L': 'L',
+        'M': 'M', 'N': 'N', 'O': 'O', 'P': 'P', 'Q': 'Q', 'R': 'R',
+        'S': 'S', 'T': 'T', 'U': 'U', 'V': 'V', 'W': 'W', 'X': 'X',
+        'Y': 'Y', 'Z': 'Z', '0': '0', '1': '1', '2': '2', '3': '3',
+        '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+        '!': '!', '@': '@', '#': '#', '$': '$', '%': '%'
+      },
+      'extra': {
+        'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F'
+      },
+      'forestry': {
+        'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F',
+        'G': 'G', 'H': 'H', 'I': 'I', 'J': 'J', 'K': 'K', 'L': 'L'
+      },
+      'animal': {
+        'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F',
+        'G': 'G', 'H': 'H', 'I': 'I', 'J': 'J', 'K': 'K', 'L': 'L'
+      }
+    };
+
+    // Fungsi untuk update dropdown options berdasarkan font type
+    function updateCharDropdown() {
+      const dropdown = document.getElementById('marker-char');
+      const currentValue = dropdown.value;
+      
+      // Clear existing options
+      dropdown.innerHTML = '';
+      
+      // Get available characters for current font type
+      const charMap = geosianaCharMap[selectedType];
+      const chars = Object.keys(charMap);
+      
+      // Add options for each available character
+      chars.forEach(char => {
+        const option = document.createElement('option');
+        option.value = char;
+        option.textContent = char + ' - ' + charMap[char];
+        dropdown.appendChild(option);
+      });
+      
+      // Restore previous selection if available, otherwise select first option
+      if (chars.includes(currentValue)) {
+        dropdown.value = currentValue;
+      } else {
+        dropdown.value = chars[0];
+      }
+      
+      selectedChar = dropdown.value;
+    }
+
+    // Fungsi untuk update font preview
+    function updateFontPreview() {
+      const preview = document.getElementById('font-preview');
+      const previewChar = document.getElementById('preview-char');
+      const previewFontName = document.getElementById('preview-font-name');
+      
+      // Update class untuk font family dan warna
+      preview.className = '';
+      preview.classList.add(selectedType + '-font');
+      preview.classList.add(selectedColor);
+      
+      // Update karakter dengan mapping yang benar
+      const charMap = geosianaCharMap[selectedType];
+      const displayChar = charMap[selectedChar] || charMap['A'] || 'A';
+      previewChar.textContent = displayChar;
+      
+      // Update nama font dan warna
+      const fontNames = {
+        'default': 'Geosiana Default',
+        'extra': 'Geosiana Extra', 
+        'forestry': 'Geosiana Forestry',
+        'animal': 'Geosiana Animal'
+      };
+      previewFontName.textContent = fontNames[selectedType] + ' - ' + selectedColor;
+    }
+
+    // Expose functions to global scope for HTML onclick
+    window.zoomToMarker = zoomToMarker;
+    window.deleteMarker = deleteMarker;
+  </script>
+</body>
+</html>

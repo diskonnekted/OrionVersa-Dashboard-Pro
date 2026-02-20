@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Berita Bencana - Banjarnegara</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 25px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+            border: none;
+        }
+        
+        .card-header.form-header {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+        
+        .news-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .news-item:hover {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+        }
+        
+        .news-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .news-meta {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .news-content {
+            color: #34495e;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .disaster-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .longsor { background-color: #f39c12; color: white; }
+        .banjir { background-color: #3498db; color: white; }
+        .kebakaran { background-color: #e74c3c; color: white; }
+        .angin { background-color: #9b59b6; color: white; }
+        .default { background-color: #95a5a6; color: white; }
+        
+        .impact-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+        
+        .impact-rumah { background-color: #e67e22; color: white; }
+        .impact-jiwa { background-color: #c0392b; color: white; }
+        .impact-pengungsian { background-color: #8e44ad; color: white; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #ecf0f1;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #7f8c8d;
+        }
+        
+        .loading i {
+            font-size: 3rem;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .no-image {
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            height: 200px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-newspaper me-2"></i>
+                Berita Bencana Banjarnegara
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="fas fa-map me-1"></i>
+                            Peta
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="berita.html">
+                            <i class="fas fa-list me-1"></i>
+                            Berita
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Statistik -->
+            <div class="col-12">
+                <div class="stats-card">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="stats-number" id="totalNews">0</div>
+                            <div class="stats-label">Total Berita</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stats-number" id="totalLongsor">0</div>
+                            <div class="stats-label">Tanah Longsor</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stats-number" id="totalBanjir">0</div>
+                            <div class="stats-label">Banjir</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="stats-number" id="totalKebakaran">0</div>
+                            <div class="stats-label">Kebakaran</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Tambah Berita -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header form-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Tambah Berita Baru
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="newsForm">
+                            <div class="mb-3">
+                                <label class="form-label">Judul Berita</label>
+                                <input type="text" class="form-control" id="newsTitle" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Jenis Bencana</label>
+                                <select class="form-select" id="disasterType" required>
+                                    <option value="">Pilih Jenis Bencana</option>
+                                    <option value="Tanah Longsor">Tanah Longsor</option>
+                                    <option value="Banjir">Banjir</option>
+                                    <option value="Kebakaran">Kebakaran</option>
+                                    <option value="Angin Kencang">Angin Kencang</option>
+                                    <option value="Pohon Tumbang">Pohon Tumbang</option>
+                                    <option value="Orang Hilang">Orang Hilang</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Tanggal Kejadian</label>
+                                <input type="date" class="form-control" id="incidentDate" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Lokasi (Desa, Kecamatan)</label>
+                                <input type="text" class="form-control" id="location" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Koordinat (opsional)</label>
+                                <input type="text" class="form-control" id="coordinates" placeholder="-7.123456, 109.123456">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Isi Berita / Kronologi</label>
+                                <textarea class="form-control" id="newsContent" rows="4" required></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Dampak Bangunan</label>
+                                <input type="text" class="form-control" id="buildingImpact" placeholder="Contoh: 2 rumah rusak, 1 jalan putus">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Dampak Jiwa</label>
+                                <input type="text" class="form-control" id="casualtyImpact" placeholder="Contoh: 3 orang luka ringan">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Dampak Pengungsian</label>
+                                <input type="text" class="form-control" id="evacuationImpact" placeholder="Contoh: 10 KK mengungsi">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Link Gambar (opsional)</label>
+                                <input type="url" class="form-control" id="imageUrl" placeholder="https://...">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Upload Gambar (opsional)</label>
+                                <input type="file" class="form-control" id="imageFile" accept="image/*">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save me-2"></i>
+                                Simpan Berita
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daftar Berita -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Daftar Berita Bencana
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-select" id="filterYear">
+                                        <option value="">Semua Tahun</option>
+                                        <option value="2024">2024</option>
+                                        <option value="2023">2023</option>
+                                        <option value="2022">2022</option>
+                                        <option value="2021">2021</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select" id="filterType">
+                                        <option value="">Semua Jenis</option>
+                                        <option value="Tanah Longsor">Tanah Longsor</option>
+                                        <option value="Banjir">Banjir</option>
+                                        <option value="Kebakaran">Kebakaran</option>
+                                        <option value="Angin Kencang">Angin Kencang</option>
+                                        <option value="Pohon Tumbang">Pohon Tumbang</option>
+                                        <option value="Orang Hilang">Orang Hilang</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="newsList">
+                            <div class="loading">
+                                <i class="fas fa-spinner"></i>
+                                <p>Memuat data berita...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk detail berita -->
+    <div class="modal fade" id="newsDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Detail Berita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="berita.js"></script>
+</body>
+</html>

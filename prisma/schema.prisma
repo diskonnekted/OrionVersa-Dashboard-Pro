@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model paste_errors {
+  id           Int     @id @default(autoincrement())
+  noreg        String? @db.VarChar(6)
+  ruasja       String? @db.VarChar(19)
+  status       String? @db.VarChar(9)
+  loksta       String? @db.VarChar(8)
+  lokasi       String? @db.VarChar(11)
+  lokasi2      String? @db.VarChar(12)
+  jenperja     String? @db.VarChar(17)
+  jenperja2    String? @db.VarChar(10)
+  gol          String? @db.VarChar(2)
+  nomorjenis   String? @db.VarChar(4)
+  arti         String? @db.VarChar(105)
+  gambar       Int?
+  poska        String? @db.VarChar(1)
+  posteng      String? @db.VarChar(1)
+  poski        String? @db.VarChar(1)
+  terpa        String? @db.VarChar(1)
+  kebut        String? @db.VarChar(1)
+  baru         String? @db.VarChar(1)
+  rusak        String? @db.VarChar(2)
+  hilang       String? @db.VarChar(1)
+  sumdana      String? @db.VarChar(8)
+  ta           String? @db.VarChar(5)
+  ket          String? @db.VarChar(89)
+  solsel       String? @db.VarChar(1)
+  lisman       String? @db.VarChar(1)
+  listerkwh    String? @db.VarChar(1)
+  listernonkwh String? @db.VarChar(1)
+  lamled       String? @db.VarChar(1)
+  lampson      String? @db.VarChar(1)
+  lammh        String? @db.VarChar(1)
+  lamerkuri    String? @db.VarChar(1)
+  lamfl        String? @db.VarChar(1)
+  lamcfl       String? @db.VarChar(1)
+  dayalam      String? @db.VarChar(1)
+}
+
+model ews_levels {
+  id             Int          @id @default(autoincrement()) @db.UnsignedInt
+  station_id     Int          @db.UnsignedInt
+  measured_at    DateTime     @default(now()) @db.Timestamp(0)
+  water_level_cm Int
+  status         String       @db.VarChar(20)
+  note           String?      @db.VarChar(255)
+  ews_stations   ews_stations @relation(fields: [station_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_ews_levels_station")
+
+  @@index([station_id, measured_at], map: "idx_station_time")
+}
+
+model ews_stations {
+  id          Int          @id @default(autoincrement()) @db.UnsignedInt
+  name        String       @db.VarChar(100)
+  location    String?      @db.VarChar(150)
+  sensor_code String?      @db.VarChar(100)
+  type        String?      @db.VarChar(20)
+  status      String       @default("aktif") @db.VarChar(20)
+  latitude    Float
+  longitude   Float
+  description String?      @db.Text
+  created_at  DateTime     @default(now()) @db.Timestamp(0)
+  updated_at  DateTime     @default(now()) @db.Timestamp(0)
+  ews_levels  ews_levels[]
+}

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penawaran Harga - Orion Early Warning System (EWS)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 40px 60px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .header .tagline {
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+        }
+        
+        /* Section Styles */
+        .section {
+            padding: 40px 60px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            color: #0f172a;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        /* Package Badge */
+        .package-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .badge-lite {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #0f172a;
+        }
+        
+        .badge-standard {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 12px 20px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f1f5f9;
+        }
+        
+        .comparison-table .feature-category {
+            background: #e2e8f0;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        
+        .price-cell {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #0f172a;
+        }
+        
+        .price-cell .small {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #64748b;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        .check {
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .cross {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* Package Summary */
+        .package-summary {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border-left: 5px solid #667eea;
+        }
+        
+        .package-summary h3 {
+            color: #0f172a;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .package-summary ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .package-summary li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #475569;
+        }
+        
+        .package-summary li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: 700;
+        }
+        
+        /* Total Price Box */
+        .total-box {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 40px 0;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .total-box .label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .total-box .price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .total-box .note {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 15px;
+        }
+        
+        /* ROI Table */
+        .roi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        
+        .roi-table th, .roi-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .roi-table th {
+            background: #0f172a;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .roi-table tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .roi-table .highlight-row {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: 700;
+        }
+        
+        /* Bonus Section */
+        .bonus-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .bonus-item {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .bonus-item h4 {
+            color: #065f46;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .bonus-item .value {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 1.2rem;
+        }
+        
+        /* Recommendation Box */
+        .recommendation {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-left: 5px solid #3b82f6;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        .recommendation h3 {
+            color: #1e40af;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recommendation h3:before {
+            content: "💡";
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 40px 60px;
+            text-align: center;
+        }
+        
+        .footer h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .contact-item {
+            text-align: left;
+        }
+        
+        .contact-item h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+        
+        .contact-item p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .disclaimer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header, .section, .footer {
+                padding: 30px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .comparison-table {
+                font-size: 0.85rem;
+            }
+            
+            .comparison-table th, .comparison-table td {
+                padding: 8px 10px;
+            }
+            
+            .total-box .price {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>ORION EARLY WARNING SYSTEM (EWS)</h1>
+            <div class="subtitle">Solusi Terintegrasi untuk Mitigasi Bencana Berbasis IoT</div>
+            <div class="tagline">Teknologi Presisi • Proteksi Masyarakat • Investasi Berkelanjutan</div>
+        </div>
+        
+        <!-- Overview -->
+        <div class="section">
+            <h2 class="section-title">📊 Struktur Paket Produk</h2>
+            <p style="font-size: 1.1rem; line-height: 1.8;">
+                Setiap produk Orion tersedia dalam <strong>2 tier</strong> untuk menyesuaikan kebutuhan dan anggaran:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 30px 0;">
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 25px; border-radius: 10px; border-left: 5px solid #f59e0b;">
+                    <h3 style="color: #92400e; margin-bottom: 15px;">📦 PAKET LITE</h3>
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Cocok untuk pilot project</li>
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Desa/Kelurahan</li>
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Anggaran terbatas</li>
+                    </ul>
+                </div>
+                <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); padding: 25px; border-radius: 10px; border-left: 5px solid #3b82f6;">
+                    <h3 style="color: #1e40af; margin-bottom: 15px;">🚀 PAKET STANDAR</h3>
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Rekomendasi untuk Kecamatan/Kabupaten</li>
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Kebutuhan operasional penuh</li>
+                        <li style="padding: 8px 0; padding-left: 25px; position: relative;">Notifikasi massal ke warga</li>
+                    </ul>
+                </div>
+            </div>
+            <p style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #667eea;">
+                <strong>✅ Semua paket sudah termasuk:</strong> Instalasi, pelatihan operator, garansi 2 tahun, dan layanan cloud dashboard 1 tahun.
+            </p>
+        </div>
+        
+        <!-- FloodGuard -->
+        <div class="section">
+            <h2 class="section-title">🌊 ORION FLOODGUARD — EWS Banjir</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Fitur</th>
+                        <th><span class="package-badge badge-lite">LITE</span><br>Rp 20.000.000</th>
+                        <th><span class="package-badge badge-standard">STANDAR</span><br>Rp 30.000.000</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="feature-category">
+                        <td><strong>Sensor Utama</strong></td>
+                        <td>Ultrasonic sensor (akurasi ±1 cm)</td>
+                        <td class="highlight">LiDAR ToF (akurasi ±2 mm)</td>
+                    </tr>
+                    <tr>
+                        <td>Verifikasi Visual</td>
+                        <td class="cross">—</td>
+                        <td class="check">AI Camera (deteksi sampah/arus turbulen)</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Jumlah Titik Monitoring</strong></td>
+                        <td>2 titik sungai</td>
+                        <td class="highlight">5 titik sungai</td>
+                    </tr>
+                    <tr>
+                        <td>Gateway LoRa</td>
+                        <td>1 unit (jangkauan 3 km)</td>
+                        <td class="highlight">2 unit (mesh network, jangkauan 7 km)</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Power System</strong></td>
+                        <td>Solar 20W + baterai 10Ah (autonomy 3 hari)</td>
+                        <td class="highlight">Solar 30W + baterai 20Ah (autonomy 10 hari)</td>
+                    </tr>
+                    <tr>
+                        <td>Alarm Lokal</td>
+                        <td>Buzzer 85 dB</td>
+                        <td class="highlight">Buzzer 95 dB + strobe LED + relay sirene eksternal</td>
+                    </tr>
+                    <tr>
+                        <td>Integrasi Data Eksternal</td>
+                        <td class="cross">—</td>
+                        <td class="check">API BMKG (curah hujan) + prediksi waktu meluap</td>
+                    </tr>
+                    <tr>
+                        <td>Notifikasi</td>
+                        <td>WhatsApp ke 3 PIC</td>
+                        <td class="highlight">WhatsApp + SMS massal ke 100 nomor warga terdaftar</td>
+                    </tr>
+                    <tr>
+                        <td>Maintenance</td>
+                        <td>1x kunjungan/tahun</td>
+                        <td class="highlight">4x kunjungan/tahun + remote diagnostics</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- GeoShield -->
+        <div class="section">
+            <h2 class="section-title">🏔️ ORION GEOSHIELD — EWS Longsor</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Fitur</th>
+                        <th><span class="package-badge badge-lite">LITE</span><br>Rp 25.000.000</th>
+                        <th><span class="package-badge badge-standard">STANDAR</span><br>Rp 30.000.000</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="feature-category">
+                        <td><strong>Sensor Utama</strong></td>
+                        <td>Tiltmeter digital (±0.1°)</td>
+                        <td class="highlight">Gyro ICM-20948 + Rotary Encoder pada sling anchor (akurasi ±0.5 mm)</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Jumlah Titik Monitoring</strong></td>
+                        <td>3 titik lereng</td>
+                        <td class="highlight">8 titik lereng</td>
+                    </tr>
+                    <tr>
+                        <td>Gateway LoRa</td>
+                        <td>1 unit</td>
+                        <td class="highlight">2 unit (mesh network)</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Power System</strong></td>
+                        <td>Solar 20W + baterai 10Ah (autonomy 3 hari)</td>
+                        <td class="highlight">Solar 30W + baterai 20Ah (autonomy 10 hari)</td>
+                    </tr>
+                    <tr>
+                        <td>Alarm Lokal</td>
+                        <td>Buzzer 85 dB</td>
+                        <td class="highlight">Buzzer 95 dB + strobe LED + relay sirene eksternal</td>
+                    </tr>
+                    <tr>
+                        <td>Integrasi Data Eksternal</td>
+                        <td class="cross">—</td>
+                        <td class="check">Korelasi dengan data curah hujan BMKG + kejenuhan tanah</td>
+                    </tr>
+                    <tr>
+                        <td>Notifikasi</td>
+                        <td>WhatsApp ke 3 PIC</td>
+                        <td class="highlight">WhatsApp + SMS massal ke warga zona rawan</td>
+                    </tr>
+                    <tr>
+                        <td>Maintenance</td>
+                        <td>1x kunjungan/tahun</td>
+                        <td class="highlight">4x kunjungan/tahun + kalibrasi sensor otomatis</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- WeatherGuard -->
+        <div class="section">
+            <h2 class="section-title">☀️ ORION WEATHERGUARD — Stasiun Cuaca</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Fitur</th>
+                        <th><span class="package-badge badge-lite">LITE</span><br>Rp 20.000.000</th>
+                        <th><span class="package-badge badge-standard">STANDAR</span><br>Rp 30.000.000</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="feature-category">
+                        <td><strong>Sensor Parameter</strong></td>
+                        <td>Suhu, kelembapan, curah hujan</td>
+                        <td class="highlight">Suhu, kelembapan, curah hujan, kecepatan/arah angin, tekanan udara, UV index</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Jumlah Stasiun</strong></td>
+                        <td>1 unit</td>
+                        <td class="highlight">3 unit (sebaran wilayah)</td>
+                    </tr>
+                    <tr>
+                        <td>Update Rate</td>
+                        <td>15 menit</td>
+                        <td class="highlight">5 menit</td>
+                    </tr>
+                    <tr>
+                        <td>Gateway LoRa</td>
+                        <td>1 unit</td>
+                        <td class="highlight">2 unit (redundansi)</td>
+                    </tr>
+                    <tr class="feature-category">
+                        <td><strong>Power System</strong></td>
+                        <td>Solar 20W + baterai 10Ah</td>
+                        <td class="highlight">Solar 30W + baterai 20Ah</td>
+                    </tr>
+                    <tr>
+                        <td>Integrasi Data Eksternal</td>
+                        <td class="cross">—</td>
+                        <td class="check">API Open-Meteo (prediksi 72 jam) + peringatan dini cuaca ekstrem</td>
+                    </tr>
+                    <tr>
+                        <td>Notifikasi</td>
+                        <td>Dashboard saja</td>
+                        <td class="highlight">Dashboard + alert WhatsApp saat potensi hujan lebat (>50 mm/jam)</td>
+                    </tr>
+                    <tr>
+                        <td>Maintenance</td>
+                        <td>1x kunjungan/tahun</td>
+                        <td class="highlight">4x kunjungan/tahun + kalibrasi sensor</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Dashboard -->
+        <div class="section">
+            <h2 class="section-title">📈 DASHBOARD MONITORING TERPUSAT</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Fitur</th>
+                        <th><span class="package-badge badge-lite">LITE</span><br>Rp 50.000.000</th>
+                        <th><span class="package-badge badge-standard">STANDAR</span><br>Rp 75.000.000</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="feature-category">
+                        <td><strong>Jumlah Perangkat Termonitor</strong></td>
+                        <td>Maks. 10 node</td>
+                        <td class="highlight">Maks. 50 node</td>
+                    </tr>
+                    <tr>
+                        <td>Tampilan Peta</td>
+                        <td>Peta statis dengan marker</td>
+                        <td class="highlight">Peta interaktif + geofence + heatmap risiko</td>
+                    </tr>
+                    <tr>
+                        <td>Grafik Data</td>
+                        <td>Grafik dasar (line chart)</td>
+                        <td class="highlight">Grafik lanjutan (tren, prediksi AI, korelasi multi-parameter)</td>
+                    </tr>
+                    <tr>
+                        <td>Multi-User</td>
+                        <td>3 akun operator</td>
+                        <td class="highlight">15 akun dengan role-based access</td>
+                    </tr>
+                    <tr>
+                        <td>Notifikasi</td>
+                        <td>WhatsApp manual</td>
+                        <td class="highlight">Otomatis multi-channel: WhatsApp, SMS, email, webhook</td>
+                    </tr>
+                    <tr>
+                        <td>Laporan</td>
+                        <td>Export PDF manual</td>
+                        <td class="highlight">Auto-generate laporan harian/mingguan/bulanan</td>
+                    </tr>
+                    <tr>
+                        <td>Backup Data</td>
+                        <td>Cloud storage 3 bulan</td>
+                        <td class="highlight">Cloud storage 24 bulan + export ke server Pemda</td>
+                    </tr>
+                    <tr>
+                        <td>API Integration</td>
+                        <td class="cross">—</td>
+                        <td class="check">REST API untuk integrasi dengan sistem BPBD/DISKOMINFO</td>
+                    </tr>
+                    <tr>
+                        <td>Custom Branding</td>
+                        <td>Logo Orion</td>
+                        <td class="highlight">White-label: Logo Pemda + warna branding daerah</td>
+                    </tr>
+                    <tr>
+                        <td>Support</td>
+                        <td>Email support (respon 24 jam)</td>
+                        <td class="highlight">Dedicated support: WhatsApp khusus + remote assistance 24/7</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paket Komplit -->
+        <div class="section">
+            <h2 class="section-title">📦 PAKET KOMPLIT — HARGA TOTAL</h2>
+            
+            <div class="package-summary">
+                <h3>✅ PAKET LITE KOMPLIT — Rp 115.000.000</h3>
+                <ul>
+                    <li>Dashboard Monitoring Lite — Rp 50.000.000</li>
+                    <li>Orion FloodGuard Lite (2 titik) — Rp 20.000.000</li>
+                    <li>Orion GeoShield Lite (3 titik) — Rp 25.000.000</li>
+                    <li>Orion WeatherGuard Lite (1 stasiun) — Rp 20.000.000</li>
+                </ul>
+                <p style="margin-top: 15px; padding-top: 15px; border-top: 2px dashed #cbd5e1;">
+                    <strong>💡 Cocok untuk:</strong> 1 kecamatan dengan 2 sungai rawan banjir + 3 lereng rawan longsor + 1 stasiun cuaca induk.
+                </p>
+            </div>
+            
+            <div class="total-box">
+                <div class="label">⭐ REKOMENDASI UNTUK PEMDA</div>
+                <div class="price">Rp 165.000.000</div>
+                <div class="label">PAKET STANDAR KOMPLIT</div>
+                <div style="margin-top: 20px; font-size: 1.1rem;">
+                    Dashboard Monitoring Standar — Rp 75.000.000<br>
+                    Orion FloodGuard Standar (5 titik) — Rp 30.000.000<br>
+                    Orion GeoShield Standar (8 titik) — Rp 30.000.000<br>
+                    Orion WeatherGuard Standar (3 stasiun) — Rp 30.000.000
+                </div>
+                <div class="note">
+                    <strong>Cakupan:</strong> 3–5 desa dengan sistem EWS terintegrasi penuh, notifikasi massal ke warga, dan integrasi dengan sistem BPBD existing.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Perbedaan Strategis -->
+        <div class="section">
+            <h2 class="section-title">🔑 PERBEDAAN STRATEGIS LITE vs STANDAR</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspek</th>
+                        <th>LITE</th>
+                        <th>STANDAR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Akurasi Sensor</strong></td>
+                        <td>Standar (cm-level)</td>
+                        <td class="highlight">Presisi (mm-level) + verifikasi AI</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cakupan Wilayah</strong></td>
+                        <td>1–2 desa</td>
+                        <td class="highlight">3–5 desa/1 kecamatan penuh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kontinuitas Operasional</strong></td>
+                        <td>Rentan gangguan cuaca ekstrem</td>
+                        <td class="highlight">Redundansi gateway + autonomy 10 hari</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Keterlibatan Masyarakat</strong></td>
+                        <td>Notifikasi ke petugas saja</td>
+                        <td class="highlight">Notifikasi massal ke warga (SMS/WhatsApp)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Integrasi Sistem</strong></td>
+                        <td>Standalone</td>
+                        <td class="highlight">Terhubung ke BMKG, DISKOMINFO, sistem evakuasi BPBD</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ROI (Return on Investment)</strong></td>
+                        <td>18–24 bulan</td>
+                        <td class="highlight">8–12 bulan (hemat biaya evakuasi darurat & kerugian ekonomi)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Skalabilitas</strong></td>
+                        <td>Sulit ditambah node</td>
+                        <td class="highlight">Siap ekspansi hingga 50+ node</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- ROI Analysis -->
+        <div class="section">
+            <h2 class="section-title">📊 ANALISIS ROI — Mengapa Paket STANDAR Lebih Efisien?</h2>
+            <table class="roi-table">
+                <thead>
+                    <tr>
+                        <th>Komponen</th>
+                        <th>Tanpa EWS</th>
+                        <th>Dengan Paket LITE</th>
+                        <th class="highlight-row">Dengan Paket STANDAR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Kerugian Banjir/Longsor</strong><br><small>(rata-rata/tahun)</small></td>
+                        <td>Rp 2–5 Miliar</td>
+                        <td>Rp 500 juta<br><small>(mitigasi parsial)</small></td>
+                        <td class="highlight-row">Rp 100 juta<br><small>(evakuasi tepat waktu)</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Biaya Operasional/Tahun</strong></td>
+                        <td>—</td>
+                        <td>Rp 15 juta<br><small>(maintenance)</small></td>
+                        <td class="highlight-row">Rp 20 juta<br><small>(maintenance + notifikasi massal)</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Investasi Awal</strong></td>
+                        <td>—</td>
+                        <td>Rp 115 juta</td>
+                        <td class="highlight-row">Rp 165 juta</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Penghematan Tahunan</strong></td>
+                        <td>—</td>
+                        <td>Rp 1,835 Miliar</td>
+                        <td class="highlight-row">Rp 2,280 Miliar</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ROI</strong></td>
+                        <td>—</td>
+                        <td>< 1 bulan</td>
+                        <td class="highlight-row">< 1 bulan</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #667eea;">
+                <strong>💡 Catatan:</strong> ROI dihitung berdasarkan data historis kerugian bencana di Kabupaten Banjarnegara (2020–2025). Investasi EWS bukan pengeluaran, melainkan <strong>proteksi aset daerah</strong>.
+            </div>
+        </div>
+        
+        <!-- Bonus -->
+        <div class="section">
+            <h2 class="section-title">🎁 BONUS PAKET STANDAR</h2>
+            <p style="margin-bottom: 20px;">Setiap pembelian Paket STANDAR Komplit mendapatkan:</p>
+            <div class="bonus-list">
+                <div class="bonus-item">
+                    <h4>Orion Sentry</h4>
+                    <p>Modul keamanan GPS + alarm untuk semua node</p>
+                    <div class="value">Rp 6.500.000</div>
+                </div>
+                <div class="bonus-item">
+                    <h4>Pelatihan Sertifikasi</h4>
+                    <p>Operator EWS untuk 5 orang staf BPBD</p>
+                    <div class="value">Rp 5.000.000</div>
+                </div>
+                <div class="bonus-item">
+                    <h4>Template SOP</h4>
+                    <p>Penanganan Bencana berbasis data EWS</p>
+                    <div class="value">Rp 3.000.000</div>
+                </div>
+                <div class="bonus-item">
+                    <h4>Layanan Cloud Gratis</h4>
+                    <p>Perpanjangan tahun ke-2</p>
+                    <div class="value">Rp 15.000.000</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; font-size: 1.2rem; font-weight: 700; color: #0f172a;">
+                TOTAL NILAI BONUS: <span style="color: #10b981;">Rp 29.500.000</span>
+            </div>
+        </div>
+        
+        <!-- Rekomendasi -->
+        <div class="section">
+            <h2 class="section-title">✍️ KESIMPULAN REKOMENDASI</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Untuk</th>
+                        <th>Rekomendasi Paket</th>
+                        <th>Alasan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Pilot Project / Desa Tunggal</strong></td>
+                        <td>LITE</td>
+                        <td>Uji coba teknologi dengan anggaran minimal</td>
+                    </tr>
+                    <tr class="highlight">
+                        <td><strong>Kecamatan Penuh / Kabupaten Kecil</strong></td>
+                        <td><strong>STANDAR</strong></td>
+                        <td>Cakupan optimal, notifikasi massal, integrasi sistem, ROI maksimal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kabupaten Besar (Multi-Kecamatan)</strong></td>
+                        <td>STANDAR × N</td>
+                        <td>Skalabilitas hingga 50+ node per dashboard</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="recommendation">
+                <h3>Investasi pada Paket STANDAR bukan hanya membeli perangkat — tetapi membangun sistem ketahanan bencana yang melindungi nyawa, aset, dan perekonomian daerah secara berkelanjutan.</h3>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <h3>Hubungi Kami untuk Konsultasi & Penawaran Khusus</h3>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <h4>📞 Telepon</h4>
+                    <p>+62 812-3456-7890</p>
+                </div>
+                <div class="contact-item">
+                    <h4>📧 Email</h4>
+                    <p>info@orion-ews.id</p>
+                </div>
+                <div class="contact-item">
+                    <h4>🏢 Alamat</h4>
+                    <p>Jl. Teknologi No. 123<br>Banjarnegara, Jawa Tengah</p>
+                </div>
+                <div class="contact-item">
+                    <h4>🌐 Website</h4>
+                    <p>www.orion-ews.id</p>
+                </div>
+            </div>
+            <div class="disclaimer">
+                <p>Harga belum termasuk PPN 11%. Harga dapat berubah sewaktu-waktu tanpa pemberitahuan sebelumnya. Garansi 2 tahun untuk hardware, layanan cloud berlaku 1 tahun pertama.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

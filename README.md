@@ -1,181 +1,36 @@
-# 🌊 Orion EWS Dashboard
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Sistem monitoring dan early warning system (EWS) untuk banjir berbasis web dengan integrasi data sensor, peta geospasial, dan prediksi BMKG.
+## Getting Started
 
-## ✨ Fitur Utama
+First, run the development server:
 
-- 📊 **Monitoring Real-time** - Data sensor banjir secara live
-- 🗺️ **Visualisasi Peta** - Integrasi peta geospasial OpenStreetMap
-- ⚠️ **Sistem Peringatan Dini** - Alert system berdasarkan level ketinggian air
-- 📱 **Responsive Design** - Aksesibilitas dari desktop dan mobile
-- 🔐 **Admin Dashboard** - Manajemen data sensor dan pengaturan
-- 📈 **Data Historis** - Grafik dan analisis trend ketinggian air
-
-## 🛠️ Teknologi
-
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla JS)
-- **Backend**: PHP 7.4+
-- **Database**: MySQL
-- **Mapping**: Leaflet.js dengan OpenStreetMap
-- **Charts**: Chart.js untuk visualisasi data
-- **Icons**: Flat design icons
-
-## 📋 Prerequisites
-
-- Web server (Apache/Nginx)
-- PHP 7.4 atau lebih baru
-- MySQL 5.7+
-- Composer (optional)
-
-## 🚀 Instalasi
-
-### 1. Clone Repository
 ```bash
-git clone https://github.com/diskonnekted/Orion-Dasboard-EWS-Master.git
-cd Orion-Dasboard-EWS-Master
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-### 2. Setup Database
-- Import file SQL yang tersedia
-- Konfigurasi koneksi database di `config.php`
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### 3. Konfigurasi
-Edit file `config.php` dengan detail database Anda:
-```php
-$DB_HOST = "localhost";
-$DB_NAME = "orion_ews";
-$DB_USER = "username";
-$DB_PASS = "password";
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### 4. Deploy
-Upload semua file ke web server Anda
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 📁 Struktur Project
+## Learn More
 
-```
-Orion-Dasboard-EWS-Master/
-├── index.html          # Halaman utama dashboard
-├── admin_ews.php       # Panel admin
-├── monitor_ews.php     # Monitoring detail
-├── login.php           # Authentication
-├── config.php          # Konfigurasi database
-├── ews_api.php         # API untuk data sensor
-├── ews_levels_api.php  # API level peringatan
-├── install_db.php      # Setup database
-├── seed_ews.php        # Data sample
-├── geojson/            # File geospasial
-│   ├── kontur-banjarnegara.geojson
-│   ├── peta_desa.geojson
-│   ├── sungai.geojson
-│   └── ...
-├── img/                # Assets gambar
-└── README.md
-```
+To learn more about Next.js, take a look at the following resources:
 
-## 🔧 Konfigurasi Sensor
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### Data Sensor Format
-```json
-{
-  "sensor_id": "ORION-001",
-  "water_level": 120.5,
-  "temperature": 28.3,
-  "humidity": 85,
-  "timestamp": "2024-01-15 14:30:00"
-}
-```
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-### Level Peringatan
-- 🟢 **Normal**: < 100 cm
-- 🟡 **Waspada**: 100-150 cm  
-- 🟠 **Siaga**: 150-200 cm
-- 🔴 **Awas**: > 200 cm
+## Deploy on Vercel
 
-## 🌐 API Endpoints
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-### GET Data Sensor
-```
-GET /ews_api.php?sensor_id=ORION-001
-```
-
-### GET Data Historis
-```
-GET /ews_api.php?history=1&days=7
-```
-
-### POST Data Sensor
-```
-POST /ews_api.php
-Content-Type: application/json
-
-{
-  "sensor_id": "ORION-001",
-  "water_level": 125.0
-}
-```
-
-## 📊 Fitur Dashboard
-
-### Halaman Utama
-- Peta interaktif dengan overlay kontur
-- Marker lokasi sensor
-- Status real-time setiap sensor
-- Grafik ketinggian air 24 jam terakhir
-
-### Admin Panel
-- Manajemen sensor
-- Konfigurasi threshold peringatan
-- View data historis
-- Export data
-
-## 🎨 Customization
-
-### Warna Theme
-Edit CSS variables di `index.html`:
-```css
-:root {
-  --primary-color: #2563eb;
-  --warning-color: #f59e0b;
-  --danger-color: #dc2626;
-  --success-color: #16a34a;
-}
-```
-
-### Map Style
-Ubah tile layer di `index.html`:
-```javascript
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-```
-
-## 🚨 Troubleshooting
-
-### Error Database Connection
-- Pastikan MySQL service running
-- Check credentials di `config.php`
-
-### File GeoJSON tidak load
-- Pastikan path relatif correct
-- Check permission folder `geojson/`
-
-### Peta tidak muncul
-- Check koneksi internet untuk tile OpenStreetMap
-- Pastikan Leaflet.js terload
-
-## 📝 License
-
-Project ini dikembangkan untuk sistem monitoring banjir. Silakan digunakan dengan bijak.
-
-## 🤝 Kontribusi
-
-Untuk kontribusi atau pertanyaan, silakan buka issue di GitHub repository.
-
-## 📞 Support
-
-Untuk bantuan teknis, hubungi tim development.
-
----
-
-**⚠️ Disclaimer**: Sistem ini merupakan alat bantu monitoring. Selalu gunakan sumber informasi resmi untuk keputusan penting.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
