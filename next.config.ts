@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig: NextConfig = { basePath: "/sungai", assetPrefix: "/sungai",
   /* config options here */
 };
 

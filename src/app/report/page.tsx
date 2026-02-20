@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Camera, MapPin, Send, CheckCircle2, ChevronLeft } from "lucide-react";
 
 // Data Wilayah Banjarnegara (Contoh beberapa kecamatan utama)
-const REGION_DATA = {
+const REGION_DATA: Record<string, string[]> = {
   "Banjarnegara": ["Ampelsari", "Argasoka", "Karangtengah", "Krandegan", "Kutabanjarnegara", "Parakancanggah", "Semarang", "Sokanandi"],
   "Bawang": ["Bandingan", "Bawang", "Binorong", "Blambangan", "Joho", "Kebondalem", "Masaran", "Wanadri"],
   "Karangkobar": ["Ambal", "Binangun", "Jatiteken", "Karangkobar", "Leksana", "Pagentan", "Pasiraman", "Sampang"],
@@ -15,7 +15,7 @@ const REGION_DATA = {
 
 export default function PublicReport() {
   const [coords, setCoords] = useState({ lat: 0, lng: 0 });
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState<string | null>(null);
   const [type, setType] = useState("Longsor");
   const [district, setDistrict] = useState("Banjarnegara");
   const [village, setVillage] = useState("");
@@ -32,21 +32,21 @@ export default function PublicReport() {
     setVillage(REGION_DATA["Banjarnegara"][0]);
   }, []);
 
-  const handleDistrictChange = (val) => {
+  const handleDistrictChange = (val: string) => {
     setDistrict(val);
     setVillage(REGION_DATA[val][0]);
   };
 
-  const handlePhoto = (e) => {
-    const file = e.target.files[0];
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setPhoto(reader.result);
+      reader.onloadend = () => setPhoto(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const submitReport = (e) => {
+  const submitReport = (e: React.FormEvent) => {
     e.preventDefault();
     const reports = JSON.parse(localStorage.getItem("orion_reports") || "[]");
     const newReport = {

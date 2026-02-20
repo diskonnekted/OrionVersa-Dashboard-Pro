@@ -5,14 +5,14 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
 export default function DashboardReports() {
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState<any[]>([]);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("orion_reports") || "[]");
     setReports(data);
   }, []);
 
-  const getIcon = (r) => {
+  const getIcon = (r: any) => {
     const color = r.status === 'Ditangani' ? '#10b981' : (r.status === 'Proses Validasi' ? '#f59e0b' : '#6366f1');
     return L.divIcon({
       className: "report-icon",
@@ -36,7 +36,7 @@ export default function DashboardReports() {
           {reports.length === 0 ? (
             <div className="text-center p-10 opacity-30 italic font-bold text-[10px]">Belum ada laporan masuk</div>
           ) : (
-            reports.sort((a,b)=>b.id-a.id).map(r => (
+            reports.sort((a,b)=>b.id-a.id).map((r: any) => (
               <div key={r.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-black text-[10px] text-slate-700 uppercase">{r.type}</span>
@@ -60,7 +60,7 @@ export default function DashboardReports() {
           <ZoomControl position="topright" />
           <ScaleControl position="bottomright" />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {reports.map(r => (
+          {reports.map((r: any) => (
             <Marker key={r.id} position={[r.lat, r.lng]} icon={getIcon(r)}>
               <Popup>
                 <div className="p-1 font-sans w-48">

@@ -6,14 +6,14 @@ import L from "leaflet";
 import { ShieldCheck, Phone, Home, Users, CheckCircle2, Trash2, RefreshCcw } from "lucide-react";
 
 export default function DashboardAdmin() {
-  const [reports, setReports] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [reports, setReports] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any>(null);
   const [villageGeo, setVillageGeo] = useState(null);
   const [pulse, setPulse] = useState(true);
 
   const loadReports = useCallback(() => {
     const data = JSON.parse(localStorage.getItem("orion_reports") || "[]");
-    setReports(data.map(r => ({ 
+    setReports(data.map((r: any) => ({ 
       ...r, 
       verif: r.verif || { reporter: false, village: false, residents: false },
       status: r.status || 'Diterima'
@@ -21,7 +21,7 @@ export default function DashboardAdmin() {
   }, []);
 
   useEffect(() => {
-    fetch("/data/peta_desa.geojson").then(r=>r.json()).then(d=>setVillageGeo(d));
+    fetch("/sungai/data/peta_desa.geojson").then(r=>r.json()).then(d=>setVillageGeo(d));
     loadReports();
     
     // Sinkronisasi otomatis antar tab
@@ -35,7 +35,7 @@ export default function DashboardAdmin() {
     };
   }, [loadReports]);
 
-  const updateVerif = (reportId, field) => {
+  const updateVerif = (reportId: any, field: any) => {
     const updated = reports.map(r => {
       if (r.id === reportId) {
         const newVerif = { ...r.verif, [field]: !r.verif[field] };
@@ -46,26 +46,26 @@ export default function DashboardAdmin() {
     saveAndSync(updated, reportId);
   };
 
-  const markAsValid = (reportId) => {
+  const markAsValid = (reportId: any) => {
     const updated = reports.map(r => r.id === reportId ? { ...r, status: 'Ditangani', isValidated: true } : r);
     saveAndSync(updated, reportId);
   };
 
-  const deleteReport = (reportId) => {
+  const deleteReport = (reportId: any) => {
     if(!confirm("Hapus laporan ini?")) return;
-    const filtered = reports.filter(r => r.id !== reportId);
+    const filtered = reports.filter((r: any) => r.id !== reportId);
     setReports(filtered);
     localStorage.setItem("orion_reports", JSON.stringify(filtered));
     setSelected(null);
   };
 
-  const saveAndSync = (newList, currentId) => {
+  const saveAndSync = (newList: any, currentId: any) => {
     setReports(newList);
     localStorage.setItem("orion_reports", JSON.stringify(newList));
-    if (currentId) setSelected(newList.find(r => r.id === currentId));
+    if (currentId) setSelected(newList.find((r: any) => r.id === currentId));
   };
 
-  const getIcon = (r) => L.divIcon({
+  const getIcon = (r: any) => L.divIcon({
     className: "admin-icon",
     html: `<div style="background-color:${r.status==='Ditangani'?'#10b981':(r.status==='Proses Validasi'?'#f59e0b':'#ef4444')};width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fa-solid ${r.status==='Ditangani'?'fa-check':'fa-triangle-exclamation'}"></i></div>`,
     iconSize: [24,24], iconAnchor: [12,12]
@@ -90,7 +90,7 @@ export default function DashboardAdmin() {
               No Data Found<br/>Send report via /report page
             </div>
           ) : (
-            reports.sort((a,b)=>b.id-a.id).map(r => (
+            reports.sort((a: any, b: any) => b.id - a.id).map((r: any) => (
               <div key={r.id} onClick={()=>setSelected(r)} className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${selected?.id===r.id?'border-indigo-500 bg-indigo-50 shadow-md':'border-slate-50 hover:bg-slate-50'} ${!r.isValidated && pulse ? 'border-red-400 bg-red-50/30' : ''}`}>
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-black text-[10px] text-slate-700 uppercase">{r.type}</span>
@@ -144,7 +144,7 @@ export default function DashboardAdmin() {
             <GeoJSON 
               key={"admin-village"+pulse}
               data={villageGeo} 
-              style={(f) => {
+              style={(f: any) => {
                 const hasReport = reports.some(r => r.village === f.properties.Nama_Desa_ && !r.isValidated);
                 const isSelected = selected?.village === f.properties.Nama_Desa_;
                 if (hasReport) return { fillColor: pulse ? "#ef4444" : "#fee2e2", fillOpacity: 0.6, color: "#ef4444", weight: 2 };
@@ -153,7 +153,7 @@ export default function DashboardAdmin() {
             />
           )}
 
-          {reports.map(r => (
+          {reports.map((r: any) => (
             <Marker key={r.id} position={[r.lat, r.lng]} icon={getIcon(r)} eventHandlers={{ click: () => setSelected(r) }}>
               <Popup><div className="text-[10px] font-black uppercase">{r.type} - {r.village}</div></Popup>
             </Marker>

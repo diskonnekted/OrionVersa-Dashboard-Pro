@@ -30,43 +30,43 @@ const DISASTER_TYPES = [
   { id: "angin", label: "Angin Kencang", keywords: ["angin", "pohon tumbang"], color: "#06b6d4", icon: "fa-solid fa-wind" }
 ];
 
-function Controller({ setPos }) {
+function Controller({ setPos }: any) {
   const map = useMap();
   useEffect(() => {
     if (!map) return;
-    const onMove = (e) => setPos(`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+    const onMove = (e: any) => setPos(`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
     map.on("mousemove", onMove);
-    return () => map.off("mousemove", onMove);
+    return () => { map.off("mousemove", onMove); };
   }, [map, setPos]);
   return null;
 }
 
 export default function DashboardExplorer() {
   const [selected, setSelected] = useState(["desa"]);
-  const [selectedDisasters, setSelectedDisasters] = useState({});
-  const [expandedYear, setExpandedYear] = useState(null);
-  const [dataCache, setDataCache] = useState({});
+  const [selectedDisasters, setSelectedDisasters] = useState<Record<string, any>>({});
+  const [expandedYear, setExpandedYear] = useState<string | null>(null);
+  const [dataCache, setDataCache] = useState<Record<string, any>>({});
   const [mousePos, setMousePos] = useState("-");
-  const [boundary, setBoundary] = useState(null);
+  const [boundary, setBoundary] = useState<any>(null);
 
-  useEffect(() => { fetch("/data/batas-admin.geojson").then(r=>r.json()).then(d=>setBoundary(d)).catch(()=>{}); }, []);
+  useEffect(() => { fetch("/sungai/data/batas-admin.geojson").then(r=>r.json()).then(d=>setBoundary(d)).catch(()=>{}); }, []);
 
   useEffect(() => {
-    selected.forEach(id => {
+    selected.forEach((id: any) => {
       if (!dataCache[id]) {
-        const cfg = LAYERS_CONFIG.find(l => l.id === id);
-        if (cfg) fetch(cfg.url || "/data/" + cfg.file).then(r=>r.json()).then(d=>{ if(d&&d.type) setDataCache(p=>({...p, [id]:d})); }).catch(()=>{});
+        const cfg = (LAYERS_CONFIG.find((l: any) => l.id === id) as any);
+        if (cfg) fetch(cfg.url || "/sungai/data/" + cfg.file).then(r=>r.json()).then(d=>{ if(d&&d.type) setDataCache(p=>({...p, [id]:d})); }).catch(()=>{});
       }
     });
-    DISASTER_YEARS.forEach(y => {
+    DISASTER_YEARS.forEach((y: any) => {
       const fn = `bencana-banjarnegara-${y}.geojson`;
       if (!dataCache[fn] && Object.keys(selectedDisasters).some(k => k.startsWith(y))) {
-        fetch("/data/"+fn).then(r=>r.json()).then(d=>setDataCache(p=>({...p, [fn]:d})));
+        fetch("/sungai/data/"+fn).then(r=>r.json()).then(d=>setDataCache(p=>({...p, [fn]:d})));
       }
     });
   }, [selected, selectedDisasters, dataCache]);
 
-  const getContourStyle = (f) => {
+  const getContourStyle = (f: any) => {
     const h = f.properties?.HEIGHT || 0;
     let color = "#16a34a";
     if (h > 1500) color = "#7f1d1d";
@@ -77,7 +77,7 @@ export default function DashboardExplorer() {
     return { color, weight: h % 100 === 0 ? 2 : 0.5, opacity: 0.8 };
   };
 
-  const createDisasterIcon = (t) => L.divIcon({
+  const createDisasterIcon = (t: any) => L.divIcon({
     className: "custom-icon",
     html: `<div style="background-color: ${t.color}; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;"><i class="${t.icon}"></i></div>`,
     iconSize: [22, 22], iconAnchor: [11, 11]
@@ -94,16 +94,16 @@ export default function DashboardExplorer() {
         </div>
         
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          {categories.map(cat => {
+          {categories.map((cat: any) => {
             const items = LAYERS_CONFIG.filter(l => l.cat === cat);
             if (items.length === 0) return null;
             return (
               <div key={cat} className="space-y-2">
                 <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1 border-l-2 border-indigo-200">{cat}</h4>
                 <div className="flex flex-col gap-1">
-                  {items.map(l => (
+                  {items.map((l: any) => (
                     <label key={l.id} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all hover:bg-slate-50 ${selected.includes(l.id)?"bg-indigo-50/60 shadow-sm border border-indigo-100":"border border-transparent"}`}>
-                      <input type="checkbox" checked={selected.includes(l.id)} onChange={() => setSelected(p => p.includes(l.id)?p.filter(x=>x!==l.id):[...p, l.id])} className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300" />
+                      <input type="checkbox" checked={selected.includes(l.id)} onChange={() => setSelected((p: any) => p.includes(l.id)?p.filter((x: any) => x!==l.id):[...p, l.id])} className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-300" />
                       <span className={`text-[11px] font-bold ${selected.includes(l.id)?"text-indigo-800":"text-slate-600"}`}>{l.name}</span>
                     </label>
                   ))}
@@ -124,7 +124,7 @@ export default function DashboardExplorer() {
                     <div className="bg-white p-1 border-t border-slate-50">
                       {DISASTER_TYPES.map(type => (
                         <label key={`${year}-${type.id}`} className="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-slate-50">
-                          <input type="checkbox" checked={!!selectedDisasters[`${year}-${type.id}`]} onChange={() => setSelectedDisasters(p => ({ ...p, [`${year}-${type.id}`]: !p[`${year}-${type.id}`] }))} className="w-3 h-3 rounded text-red-600 border-slate-300" />
+                          <input type="checkbox" checked={!!selectedDisasters[`${year}-${type.id}`]} onChange={() => setSelectedDisasters((p: any) => ({ ...p, [`${year}-${type.id}`]: !p[`${year}-${type.id}`] }))} className="w-3 h-3 rounded text-red-600 border-slate-300" />
                           <span className="text-[10px] font-bold text-slate-600">{type.label}</span>
                           <i className={`${type.icon} ml-auto text-[9px]`} style={{ color: type.color }}></i>
                         </label>
@@ -153,20 +153,20 @@ export default function DashboardExplorer() {
             <BaseLayer name="Satelit"><TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" /></BaseLayer>
           </LayersControl>
           
-          {boundary && <GeoJSON data={{...boundary, features: boundary.features.filter(f => f.geometry?.type?.includes("Polygon"))}} interactive={false} style={{ color: "#64748b", weight: 1.5, fillOpacity: 0, dashArray: "5,5" }} />}
+          {boundary && <GeoJSON data={{...boundary, features: boundary.features.filter((f: any) => f.geometry?.type?.includes("Polygon"))}} interactive={false} style={{ color: "#64748b", weight: 1.5, fillOpacity: 0, dashArray: "5,5" }} />}
           
           {selected.map(id => {
             const d = dataCache[id]; const cfg = LAYERS_CONFIG.find(l=>l.id===id);
             if (!d || !cfg) return null;
             return <GeoJSON key={id} data={d} 
-              pointToLayer={(f,l)=>L.circleMarker(l,{radius:5,fillColor:cfg.color,color:"#fff",weight:1,fillOpacity:0.8})} 
-              style={(f)=> {
+              pointToLayer={(f: any, l: any) =>L.circleMarker(l,{radius:5,fillColor:cfg.color,color:"#fff",weight:1,fillOpacity:0.8})} 
+              style={(f: any) => {
                 if (id === "kontur") return getContourStyle(f);
                 const isTanah = id === "tanah";
                 const soilColor = isTanah ? (f.properties?.MACAM_TANA?.toLowerCase().includes("litosol") ? "#451a03" : "#d97706") : cfg.color;
                 return { color: soilColor, weight: 1.5, opacity: 0.8, fillOpacity: isTanah ? 0.3 : (id === "desa" ? 0.05 : 0.1), fillColor: soilColor };
               }}
-              onEachFeature={(f,l)=>{ if(f.properties) l.bindPopup(`<div class="text-xs font-sans"><b>${cfg.name}</b><br/>${f.properties.Nama_Desa_||f.properties.name||f.properties.MACAM_TANA||f.properties.HEIGHT||"Data"}</div>`) }} 
+              onEachFeature={(f: any, l: any) => { if(f.properties) l.bindPopup(`<div class="text-xs font-sans"><b>${cfg.name}</b><br/>${f.properties.Nama_Desa_||f.properties.name||f.properties.MACAM_TANA||f.properties.HEIGHT||"Data"}</div>`) }} 
             />;
           })}
 
@@ -175,11 +175,11 @@ export default function DashboardExplorer() {
             return DISASTER_TYPES.map(type => {
               if (!selectedDisasters[`${year}-${type.id}`]) return null;
               return <GeoJSON key={`${year}-${type.id}`} data={d} 
-                filter={(f) => {
+                filter={(f: any) => {
                   const val = (f.properties?.["JENIS KEJADIAN"] || f.properties?.["JENIS_KEJADIAN"] || f.properties?.["Jenis Kejadian"] || f.properties?.["Kejadian"] || f.properties?.["Name"] || "").toLowerCase();
                   return type.keywords.some(k => val.includes(k));
                 }} 
-                pointToLayer={(f, l) => L.marker(l, { icon: createDisasterIcon(type), zIndexOffset: 1000 })} 
+                pointToLayer={(f: any, l: any) => L.marker(l, { icon: createDisasterIcon(type), zIndexOffset: 1000 })} 
                 onEachFeature={(f,l) => { if(f.properties) l.bindPopup(`<div class="text-xs font-sans"><b>${type.label} (${year})</b><br/>${f.properties.Name || f.properties.JENIS_KEJADIAN || "Bencana"}</div>`) }}
               />;
             });

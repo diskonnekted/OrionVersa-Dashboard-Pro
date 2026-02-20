@@ -4,13 +4,13 @@ import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, ScaleContr
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-const Sparkline = ({ data, color, width = 200, height = 60 }) => {
+const Sparkline = ({ data, color, width = 200, height = 60 }: any) => {
   if (!data || data.length < 2) return null;
-  const values = data.map(d => d.value);
+  const values = data.map((d: any) => d.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const points = data.map((d, i) => {
+  const points = data.map((d: any, i: any) => {
     const x = (i / (data.length - 1)) * width;
     const y = height - ((d.value - min) / range) * height;
     return `${x},${y}`;
@@ -25,16 +25,16 @@ const Sparkline = ({ data, color, width = 200, height = 60 }) => {
 
 export default function DashboardMonitor() {
   const [devices, setReports] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [target, setTarget] = useState(null);
 
   const fetchLiveEws = useCallback(async () => {
     try {
-      const res = await fetch("/data/ews_live.json?t=" + Date.now());
+      const res = await fetch("/sungai/data/ews_live.json?t=" + Date.now());
       const data = await res.json();
       setReports(data);
       if (selectedDevice) {
-        const updated = data.find(d => d.id === selectedDevice.id);
+        const updated = data.find((d: any) => d.id === selectedDevice.id);
         if (updated) setSelectedDevice(updated);
       }
     } catch (e) {}
@@ -46,7 +46,7 @@ export default function DashboardMonitor() {
     return () => clearInterval(timer);
   }, [fetchLiveEws]);
 
-  const getIcon = (d) => {
+  const getIcon = (d: any) => {
     const isDanger = d.type === "flood" ? d.lastValue > 200 : d.lastValue > 10;
     const color = isDanger ? '#ef4444' : '#10b981';
     return L.divIcon({ 
@@ -56,7 +56,7 @@ export default function DashboardMonitor() {
     });
   };
 
-  function FlyTo({ target }) {
+  function FlyTo({ target }: any) {
     const map = useMap();
     useEffect(() => { if (target) map.flyTo(target, 16, { duration: 1.5 }); }, [target, map]);
     return null;
@@ -75,7 +75,7 @@ export default function DashboardMonitor() {
             <div className="space-y-2">
               <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Nodes</h4>
               {devices.length === 0 ? <p className="text-center p-10 text-[10px] italic opacity-40">Awaiting device signal...</p> : 
-                devices.map(d => (
+                devices.map((d: any) => (
                   <button key={d.id} onClick={() => { setSelectedDevice(d); }} className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-green-500 hover:bg-green-50 transition-all">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -130,7 +130,7 @@ export default function DashboardMonitor() {
           <ZoomControl position="topright" /><ScaleControl position="bottomright" />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <FlyTo target={target} />
-          {devices.map(d => (
+          {devices.map((d: any) => (
             <Marker key={d.id} position={[-7.36, 109.68]} icon={getIcon(d)}>
               <Popup><div className="text-[10px] font-black uppercase">{d.id}</div></Popup>
             </Marker>

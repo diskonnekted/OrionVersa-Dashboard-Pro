@@ -17,7 +17,7 @@ export default function MapComponent() {
     const checkAlerts = async () => {
       try {
         // 1. Check EWS Danger Signals
-        const ewsRes = await fetch("/data/ews_live.json?t=" + Date.now());
+        const ewsRes = await fetch("/sungai/data/ews_live.json?t=" + Date.now());
         const ewsData = await ewsRes.json();
         const hasDanger = ewsData.some((d: any) => d.type === 'flood' ? d.lastValue > 200 : d.lastValue > 15);
         setEwsAlert(hasDanger);
