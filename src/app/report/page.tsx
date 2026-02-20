@@ -14,7 +14,7 @@ const REGION_DATA: Record<string, string[]> = {
 };
 
 export default function PublicReport() {
-  const [coords, setCoords] = useState({ lat: 0, lng: 0 });
+  const [coords, setCoords] = useState({ lat: -7.36, lng: 109.68 });
   const [photo, setPhoto] = useState<string | null>(null);
   const [type, setType] = useState("Longsor");
   const [district, setDistrict] = useState("Banjarnegara");
@@ -30,7 +30,7 @@ export default function PublicReport() {
       setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
     });
     setVillage(REGION_DATA["Banjarnegara"][0]);
-  }, []);
+  }, { timeout: 5000, enableHighAccuracy: true }); }, []);
 
   const handleDistrictChange = (val: string) => {
     setDistrict(val);
