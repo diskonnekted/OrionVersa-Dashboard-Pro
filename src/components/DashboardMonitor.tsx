@@ -24,15 +24,15 @@ const Sparkline = ({ data, color, width = 200, height = 60 }: any) => {
 };
 
 export default function DashboardMonitor() {
-  const [devices, setReports] = useState([]);
+  const [devices, setDevices] = useState<any[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [target, setTarget] = useState(null);
 
   const fetchLiveEws = useCallback(async () => {
     try {
-      const res = await fetch("/sungai/data/ews_live.json?t=" + Date.now());
+      const res = await fetch("/sungai/api/ews/push");
       const data = await res.json();
-      setReports(data);
+      setDevices(data);
       if (selectedDevice) {
         const updated = data.find((d: any) => d.id === selectedDevice.id);
         if (updated) setSelectedDevice(updated);
