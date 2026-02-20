@@ -1,4 +1,4 @@
-use client";
+"use client";
 import { useState, useEffect } from "react";
 import { Camera, MapPin, Send, CheckCircle2, ChevronLeft } from "lucide-react";
 
