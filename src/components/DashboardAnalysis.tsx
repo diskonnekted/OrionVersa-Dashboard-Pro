@@ -47,13 +47,25 @@ export default function DashboardAnalysis() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const stopRef = useRef(false);
+  const [bnpbSummary, setBnpbSummary] = useState<any[] | null>(null);
 
   useEffect(() => {
     const files = ["peta_desa.geojson", "sungai.geojson", "tanah-jateng.geojson", "jalan.geojson", "buildings_banjarnegara.geojson", "kontur-banjarnegara.geojson", "bencana-banjarnegara-2024.geojson", "bencana-banjarnegara-2023.geojson", "bencana-banjarnegara-2022.geojson", "bencana-banjarnegara-2021.geojson"];
     files.forEach(f => {
-      if(!data[f]) fetch("/sungai/data/"+f).then(r=>r.json()).then(d=>setData(p=>({...p, [f]:d}))).catch(()=>{});
+      if(!data[f]) fetch("/data/"+f).then(r=>r.json()).then(d=>setData(p=>({...p, [f]:d}))).catch(()=>{});
     });
-    fetch("/sungai/api/locations").then(r=>r.json()).then(d=>setData(p=>({...p, "dynamic": d})));
+    fetch("/api/locations").then(r=>r.json()).then(d=>setData(p=>({...p, "dynamic": d})));
+
+    const loadBnpb = async () => {
+      try {
+        const res = await fetch("/api/bnpb/daily?tahun=2025&kabkot=Banjarnegara");
+        const json = await res.json();
+        setBnpbSummary(Array.isArray(json.byJenisBencana) ? json.byJenisBencana : []);
+      } catch {
+        setBnpbSummary([]);
+      }
+    };
+    loadBnpb();
   }, []);
 
   const handleVillageClick = async (feature: any) => {
@@ -82,15 +94,40 @@ export default function DashboardAnalysis() {
       }
     } catch(e) {}
     setProgress(100);
-    setVillageStats({ name: feature.properties.Nama_Desa_ || "N/A", landslides: lsCount, soil: soil?.properties?.MACAM_TANA || "N/A", riverRisk: riverPercent, district: feature.properties.Kecamatan || "Banjarnegara" });
+    const totalBnpb = Array.isArray(bnpbSummary)
+      ? bnpbSummary.reduce(
+          (acc, s: any) => ({
+            kejadian: acc.kejadian + (s.kejadian || 0),
+            md: acc.md + (s.md || 0),
+            trdmpk: acc.trdmpk + (s.trdmpk || 0),
+          }),
+          { kejadian: 0, md: 0, trdmpk: 0 }
+        )
+      : { kejadian: 0, md: 0, trdmpk: 0 };
+
+    setVillageStats({
+      name: feature.properties.Nama_Desa_ || "N/A",
+      landslides: lsCount,
+      soil: soil?.properties?.MACAM_TANA || "N/A",
+      riverRisk: riverPercent,
+      district: feature.properties.Kecamatan || "Banjarnegara",
+      bnpb: totalBnpb,
+    });
     setTimeout(() => setLoading(false), 500);
   };
 
   const runAnalysis = async (toolId: string) => {
     setLoading(true); setProgress(0); stopRef.current = false;
     let allDisasters: any[] = [];
-    ["2024","2023","2022","2021"].forEach(y => { if(data[`bencana-banjarnegara-${y}.geojson`]) allDisasters.push(...data[`bencana-banjarnegara-${y}.geojson`].features); });
-    const disasterPoints = turf.featureCollection(allDisasters.filter(f => f.geometry.type === "Point"));
+    ["2024","2023","2022","2021"].forEach(y => {
+      const src = data[`bencana-banjarnegara-${y}.geojson`];
+      if (src && Array.isArray(src.features)) {
+        allDisasters.push(...src.features);
+      }
+    });
+    const disasterPoints = turf.featureCollection(
+      allDisasters.filter((f) => f && f.geometry && f.geometry.type === "Point")
+    );
 
     if (toolId === "hotspot") {
       const vGeo = data["peta_desa.geojson"];
@@ -123,7 +160,7 @@ export default function DashboardAnalysis() {
     }
     else if (toolId === "landslide_risk") {
       try {
-        const nasaRes = await fetch("/sungai/api/proxy/external?service=nasa_landslide");
+        const nasaRes = await fetch("/api/proxy/external?service=nasa_landslide");
         const nasaJson = await nasaRes.json();
         setNasaLandslides(nasaJson);
         const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=-7.36&longitude=109.68&daily=rain_sum&timezone=auto");
@@ -134,7 +171,7 @@ export default function DashboardAnalysis() {
       } catch (e) { alert("Error API"); }
     }
     else if (toolId === "nasa_fire") {
-      const res = await fetch("/sungai/api/proxy/external?service=nasa");
+      const res = await fetch("/api/proxy/external?service=nasa");
       setNasaData(await res.json()); setProgress(100);
     }
     else if (toolId === "earthquake") {
@@ -179,20 +216,96 @@ export default function DashboardAnalysis() {
               <button onClick={()=>{setActiveTool(null); setVillageStats(null); setResults(null); setVulnerableRoads(null); setVulnerableBuildings(null); setSteepSlopeBuildings(null); setWeatherData(null); setQuakeData(null); setNasaData([]); setNasaLandslides([]); setRainRisk(null);}} className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 hover:text-red-600 transition-colors">← Kembali ke Menu</button>
               
               <div className="p-4 bg-red-50 rounded-2xl border border-red-100">
-                <h3 className="font-black text-red-900 uppercase text-xs mb-1">{(TOOLS.find((t: any)=>t.id===activeTool) as any).title}</h3>
-                <p className="text-[10px] text-red-700 italic">{(TOOLS.find((t: any)=>t.id===activeTool) as any).desc}</p>
+                <h3 className="font-black text-red-900 uppercase text-xs mb-1">
+                  {(TOOLS.find((t: any) => t.id === activeTool) as any).title}
+                </h3>
+                <p className="text-[10px] text-red-700 italic">
+                  {(TOOLS.find((t: any) => t.id === activeTool) as any).desc}
+                </p>
               </div>
 
-              {activeTool === "stats" && villageStats && (
+              {activeTool === "stats" && (
                 <div className="space-y-4 animate-in zoom-in-95">
-                  <div className="p-5 bg-slate-900 text-white rounded-2xl border-t-4 border-red-500 shadow-xl space-y-4">
-                    <div className="flex justify-between items-start border-b border-white/10 pb-3"><div><h4 className="font-black uppercase text-sm leading-tight">Desa {villageStats.name}</h4><p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{villageStats.district}</p></div><ShieldAlert className="w-5 h-5 text-red-500" /></div>
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4"><div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center text-red-500 font-black">{villageStats.landslides}</div><div><p className="text-[8px] opacity-50 uppercase font-black">Bencana</p><p className="text-[10px] font-bold">Terdata historis</p></div></div>
-                      <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4"><div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-500"><Droplets className="w-5 h-5" /></div><div><p className="text-[8px] opacity-50 uppercase font-black">Risiko Bantaran</p><p className="text-sm font-black text-blue-400">{villageStats.riverRisk}% Wilayah</p></div></div>
-                      <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4"><div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center text-amber-500"><MapIcon className="w-5 h-5" /></div><div><p className="text-[8px] opacity-50 uppercase font-black">Tanah</p><p className="text-[10px] font-bold leading-tight">{villageStats.soil}</p></div></div>
+                  {!villageStats && (
+                    <div className="p-4 bg-white border border-slate-100 rounded-2xl space-y-2">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                        Cara pakai
+                      </p>
+                      <p className="text-[10px] text-slate-600 leading-snug">
+                        Klik salah satu desa pada peta di sebelah kanan untuk melihat profil
+                        risiko bencana dan kerentanan detail desa tersebut.
+                      </p>
                     </div>
-                  </div>
+                  )}
+                  {villageStats && (
+                    <div className="p-5 bg-slate-900 text-white rounded-2xl border-t-4 border-red-500 shadow-xl space-y-4">
+                      <div className="flex justify-between items-start border-b border-white/10 pb-3">
+                        <div>
+                          <h4 className="font-black uppercase text-sm leading-tight">
+                            Desa {villageStats.name}
+                          </h4>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
+                            {villageStats.district}
+                          </p>
+                        </div>
+                        <ShieldAlert className="w-5 h-5 text-red-500" />
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4">
+                          <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center text-red-500 font-black">
+                            {villageStats.landslides}
+                          </div>
+                          <div>
+                            <p className="text-[8px] opacity-50 uppercase font-black">
+                              Bencana
+                            </p>
+                            <p className="text-[10px] font-bold">Terdata historis</p>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-500">
+                            <Droplets className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] opacity-50 uppercase font-black">
+                              Risiko Bantaran
+                            </p>
+                            <p className="text-sm font-black text-blue-400">
+                              {villageStats.riverRisk}% Wilayah
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4">
+                          <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center text-amber-500">
+                            <MapIcon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] opacity-50 uppercase font-black">
+                              Tanah
+                            </p>
+                            <p className="text-[10px] font-bold leading-tight">
+                              {villageStats.soil}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 p-3 rounded-xl flex items-center gap-4">
+                          <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 font-black">
+                            {villageStats.bnpb?.kejadian || 0}
+                          </div>
+                          <div>
+                            <p className="text-[8px] opacity-50 uppercase font-black">
+                              Rekap BNPB 2025
+                            </p>
+                            <p className="text-[10px] font-bold leading-tight">
+                              {villageStats.bnpb?.kejadian || 0} kejadian •{" "}
+                              {villageStats.bnpb?.md || 0} MD •{" "}
+                              {villageStats.bnpb?.trdmpk || 0} terdampak
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -212,7 +325,16 @@ export default function DashboardAnalysis() {
                 </div>
               )}
 
-              {!loading && !results && !vulnerableRoads && !steepSlopeBuildings && !weatherData && !quakeData && ewsRecommendations.length === 0 && nasaData.length === 0 && nasaLandslides.length === 0 && (
+              {!loading &&
+                activeTool !== "stats" &&
+                !results &&
+                !vulnerableRoads &&
+                !steepSlopeBuildings &&
+                !weatherData &&
+                !quakeData &&
+                ewsRecommendations.length === 0 &&
+                nasaData.length === 0 &&
+                nasaLandslides.length === 0 && (
                 <button onClick={()=>runAnalysis(activeTool)} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-red-700 flex items-center justify-center gap-2 active:scale-95 transition-all">
                   <Zap className="w-4 h-4" /> Jalankan Analisis
                 </button>

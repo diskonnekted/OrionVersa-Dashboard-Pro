@@ -34,9 +34,17 @@ export default function PublicPortal() {
   const [activeTab, setActiveTab] = useState("home");
   const [location, setLocation] = useState<[number, number]>([-7.36, 109.68]);
   const [reports, setReports] = useState<any[]>([]);
+  const [responses, setResponses] = useState<any[]>([]);
   const [isSafe, setIsSafe] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "", phone: "", type: "Longsor", district: "Banjarnegara", 
@@ -46,11 +54,20 @@ export default function PublicPortal() {
 
   const loadData = async () => {
     try {
-      const res = await fetch("/sungai/api/reports");
+      const res = await fetch("/api/reports");
       const data = await res.json();
       setReports(data);
       setIsSafe(!data.some((r: any) => !r.isValidated));
-    } catch (e) { console.error(e); }
+      const respRes = await fetch("/api/responses?limit=5");
+      if (respRes.ok) {
+        const respData = await respRes.json();
+        setResponses(Array.isArray(respData) ? respData : []);
+      } else {
+        setResponses([]);
+      }
+    } catch (e) { 
+      console.error(e); 
+    }
   };
 
   useEffect(() => {
@@ -80,7 +97,7 @@ export default function PublicPortal() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/sungai/api/reports", {
+      const res = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,7 +129,7 @@ export default function PublicPortal() {
       <div className={`p-4 pt-6 ${isSafe ? 'bg-green-600' : 'bg-red-600'} text-white shrink-0 shadow-lg z-[2001] transition-colors duration-500`}>
         <div className="flex justify-between items-center max-w-md mx-auto">
           <div className="flex flex-col items-center gap-1">
-            <img src="/sungai/orion-light.png" alt="Logo" className="h-8 w-auto object-contain" />
+            <img src="/orion-light.png" alt="Logo" className="h-8 w-auto object-contain" />
             <span className="text-[7px] font-bold opacity-70 uppercase tracking-[0.3em] leading-none">Command Center</span>
           </div>
           <div>
@@ -140,6 +157,50 @@ export default function PublicPortal() {
               <MapPin className="w-4 h-4 text-red-500" />
               <span className="text-[10px] font-black text-slate-700 uppercase">Pantauan Terkini</span>
             </div>
+            {responses.length > 0 && (
+              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[1000] w-[90%] max-w-xl">
+                <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-indigo-500" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-700">
+                        Informasi Resmi Terbaru
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">
+                      {responses.length} Update
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {responses.map((r: any) => (
+                      <div
+                        key={r.id}
+                        className="bg-slate-50 rounded-2xl px-3 py-2 border border-slate-100 flex items-start gap-3"
+                      >
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-[10px] font-black text-indigo-700 uppercase">
+                            {r.type?.[0] || "B"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-black text-slate-800 truncate">
+                            {r.village || r.district || "Lokasi tidak diketahui"}
+                          </p>
+                          {r.notes && (
+                            <p className="text-[10px] text-slate-500 line-clamp-2">
+                              {r.notes}
+                            </p>
+                          )}
+                          <p className="text-[9px] text-slate-400 mt-0.5">
+                            {r.created_at ? new Date(r.created_at).toLocaleString("id-ID") : ""}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,0 +1,21 @@
+{
+  "name": "SIG Banjarnegara - OrionVersa Dashboard",
+  "short_name": "SIG Banjar",
+  "start_url": "/portal",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-banjarnegara.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

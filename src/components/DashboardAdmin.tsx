@@ -73,15 +73,15 @@ export default function DashboardAdmin() {
     try {
       setLoading(true);
       if (activeTab === "reports") {
-        const res = await fetch("/sungai/api/reports");
+        const res = await fetch("/api/reports");
         const data = await res.json();
         setReports(data);
       } else if (activeTab === "devices") {
-        const res = await fetch("/sungai/api/admin/devices");
+        const res = await fetch("/api/admin/devices");
         const data = await res.json();
         setDevices(Array.isArray(data) ? data : []);
       } else if (activeTab === "features") {
-        const res = await fetch("/sungai/api/admin/features");
+        const res = await fetch("/api/admin/features");
         const data = await res.json();
         setFeatures(Array.isArray(data) ? data : []);
       }
@@ -94,7 +94,7 @@ export default function DashboardAdmin() {
   };
 
   useEffect(() => {
-    fetch("/sungai/data/peta_desa.geojson").then(r=>r.json()).then(d=>setVillageGeo(d));
+    fetch("/data/peta_desa.geojson").then(r=>r.json()).then(d=>setVillageGeo(d));
     loadData();
     const interval = setInterval(() => setPulse(p => !p), 800);
     return () => clearInterval(interval);
@@ -123,7 +123,7 @@ export default function DashboardAdmin() {
         desc: "",
         village: "",
         district: "Banjarnegara",
-        photo: "/sungai/logo.png" // Default placeholder
+        photo: "/logo.png"
       });
     } else {
       setFormData({
@@ -183,11 +183,11 @@ export default function DashboardAdmin() {
       let endpoint = "";
 
       if (activeTab === "devices") {
-        endpoint = "/sungai/api/admin/devices";
+        endpoint = "/api/admin/devices";
         payload.latitude = drawingPoints[0][0];
         payload.longitude = drawingPoints[0][1];
       } else {
-        endpoint = "/sungai/api/admin/features";
+        endpoint = "/api/admin/features";
         const geometry = formData.type === "Point" 
           ? { type: "Point", coordinates: [drawingPoints[0][1], drawingPoints[0][0]] }
           : { type: formData.type, coordinates: drawingPoints.map(p => [p[1], p[0]]) };
@@ -262,7 +262,7 @@ export default function DashboardAdmin() {
     if (!confirm("Hapus item ini secara permanen?")) return;
     setLoading(true);
     try {
-      const endpoint = activeTab === "devices" ? "/sungai/api/admin/devices" : "/sungai/api/admin/features";
+      const endpoint = activeTab === "devices" ? "/api/admin/devices" : "/api/admin/features";
       const res = await fetch(`${endpoint}?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         loadData();

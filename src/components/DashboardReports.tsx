@@ -1,15 +1,29 @@
 "use client";
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
+function MapFocus({ report }: { report: any | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (report && typeof report.lat === "number" && typeof report.lng === "number") {
+      map.flyTo([report.lat, report.lng], 14);
+    }
+  }, [report, map]);
+
+  return null;
+}
+
 export default function DashboardReports() {
   const [reports, setReports] = useState<any[]>([]);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("orion_reports") || "[]");
     setReports(data);
+    if (data.length > 0) setSelectedReport(data[data.length - 1]);
   }, []);
 
   const DISASTER_MAP: Record<string, { color: string, icon: string }> = {
@@ -42,15 +56,63 @@ export default function DashboardReports() {
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Informasi Progres Kejadian</p>
         </div>
         
-        <a href="/sungai/report" target="_blank" className="w-full py-3 bg-indigo-600 text-white text-center rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-indigo-700">Kirim Laporan Baru</a>
+        <a href="/report" target="_blank" className="w-full py-3 bg-indigo-600 text-white text-center rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-indigo-700">Kirim Laporan Baru</a>
 
         <div className="flex-1 overflow-y-auto space-y-3 mt-4">
           <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b pb-1">Daftar Kejadian</h4>
+          {selectedReport && (
+            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 shadow-sm space-y-2">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Kartu Validasi</p>
+                  <p className="text-[10px] font-black text-slate-800 uppercase mt-1">{selectedReport.type}</p>
+                </div>
+                <span className={`text-[8px] font-black px-2 py-1 rounded-full uppercase ${
+                  selectedReport.isValidated
+                    ? "bg-green-100 text-green-700"
+                    : selectedReport.status === "Proses Validasi"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}>
+                  {selectedReport.isValidated ? "Terverifikasi" : (selectedReport.status || "Diterima")}
+                </span>
+              </div>
+              <p className="text-[9px] text-slate-500 italic line-clamp-3">"{selectedReport.desc}"</p>
+              <p className="text-[8px] text-slate-400 font-bold uppercase">{selectedReport.village} • {selectedReport.district}</p>
+              <div className="mt-2 bg-white rounded-xl border border-indigo-100 p-2.5 space-y-1.5">
+                <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Protokol Validasi</p>
+                {[
+                  { id: "reporter", label: "Hubungi Pelapor" },
+                  { id: "village", label: "Verif Perangkat Desa" },
+                  { id: "residents", label: "Verif Warga Sekitar" }
+                ].map(step => {
+                  const done = selectedReport.verif && selectedReport.verif[step.id];
+                  return (
+                    <div key={step.id} className="flex items-center justify-between text-[9px] py-0.5">
+                      <span className="text-slate-600">{step.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full font-black uppercase ${
+                        done ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-400"
+                      }`}>
+                        {done ? "Selesai" : "Belum"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {reports.length === 0 ? (
             <div className="text-center p-10 opacity-30 italic font-bold text-[10px]">Belum ada laporan masuk</div>
           ) : (
             reports.sort((a,b)=>b.id-a.id).map((r: any) => (
-              <div key={r.id} className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setSelectedReport(r)}
+                className={`w-full text-left p-3 bg-white rounded-xl border shadow-sm transition-all cursor-pointer hover:border-indigo-300 hover:shadow-md ${
+                  selectedReport?.id === r.id ? "border-indigo-500 ring-1 ring-indigo-200" : "border-slate-100"
+                }`}
+              >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-black text-[10px] text-slate-700 uppercase">{r.type}</span>
                   <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${r.status==='Ditangani'?'bg-green-100 text-green-600':(r.status==='Proses Validasi'?'bg-amber-100 text-amber-600':'bg-indigo-100 text-indigo-600')}`}>
@@ -62,7 +124,7 @@ export default function DashboardReports() {
                   <p className="text-[8px] text-slate-400 font-bold uppercase">{r.village}</p>
                   <p className="text-[7px] font-mono text-slate-300">{r.timestamp}</p>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
@@ -79,6 +141,7 @@ export default function DashboardReports() {
           <ZoomControl position="topright" />
           <ScaleControl position="bottomright" />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <MapFocus report={selectedReport} />
           {reports.map((r: any) => (
             <Marker key={r.id} position={[r.lat, r.lng]} icon={getIcon(r)}>
               <Popup>

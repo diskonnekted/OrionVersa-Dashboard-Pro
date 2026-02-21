@@ -62,9 +62,16 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID tidak ditemukan" }, { status: 400 });
 
-    await prisma.ews_stations.delete({
+    const station = await prisma.ews_stations.delete({
       where: { id: parseInt(id) }
     });
+
+    if (station.sensor_code) {
+      await prisma.ewsNode.deleteMany({
+        where: { id: station.sensor_code }
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Gagal menghapus perangkat" }, { status: 500 });

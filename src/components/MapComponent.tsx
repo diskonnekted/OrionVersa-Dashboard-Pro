@@ -18,13 +18,13 @@ export default function MapComponent() {
     const checkAlerts = async () => {
       try {
         // 1. Check EWS Danger Signals
-        const ewsRes = await fetch("/sungai/api/ews/push");
+        const ewsRes = await fetch("/api/ews/push");
         const ewsData = await ewsRes.json();
         const hasDanger = ewsData.some((d: any) => d.type === 'flood' ? d.lastValue > 200 : d.lastValue > 15);
         setEwsAlert(hasDanger);
 
         // 2. Check Unvalidated Reports
-        const res = await fetch("/sungai/api/reports");
+        const res = await fetch("/api/reports");
         const reports = await res.json();
         const hasNewReport = reports.some((r: any) => !r.isValidated);
         setReportAlert(hasNewReport);
@@ -41,7 +41,7 @@ export default function MapComponent() {
       {/* GLOBAL NAVIGATION HEADER */}
       <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-50 shadow-sm shrink-0">
         <div className="flex items-center gap-3">
-          <img src="/sungai/logo.png" alt="Orion Logo" className="h-10 w-auto rounded object-contain" />
+          <img src="/logo.png" alt="Orion Logo" className="h-10 w-auto rounded object-contain" />
           <div className="flex flex-col leading-none">
             <span className="font-black text-slate-800 text-sm tracking-tight uppercase">Orion Intelligence</span>
             <span className="text-[8px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-0.5">Banjarnegara Command Center</span>

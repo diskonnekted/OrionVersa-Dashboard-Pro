@@ -102,6 +102,23 @@ model PublicReport {
   timestamp   DateTime @default(now())
 }
 
+model ResponseReport {
+  id          Int      @id @default(autoincrement())
+  incidentId  String
+  type        String
+  district    String?
+  village     String?
+  hamlet      String?
+  address     String?
+  chronology  String
+  impact      String
+  handling    String
+  teamLeader  String?
+  teamMembers String?
+  notes       String?
+  created_at  DateTime @default(now())
+}
+
 model MapFeature {
   id          Int      @id @default(autoincrement())
   name        String
@@ -114,4 +131,29 @@ model MapFeature {
   color       String?  // For lines/polygons
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt @default(now())
+}
+
+model BnpbDailySummary {
+  id           Int      @id @default(autoincrement())
+  kodeKabkot   Int?
+  tanggal      DateTime
+  tahun        String?
+  bulan        String?
+  provinsi     String?
+  kabkot       String
+  kecamatan    String?
+  jenisBencana String
+  jenisEntry   String?
+  md           Int?
+  trdmpk       Int?
+  rmhFasub     Int?
+  bngnTrdm     Int?
+  lahan        Float?
+  tglInputRaw  String?
+  tglUpdateRaw String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt @default(now())
+
+  @@index([tahun, kabkot, jenisBencana])
+  @@unique([tanggal, kabkot, jenisBencana], name: "tanggal_kabkot_jenisBencana")
 }

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, type, value, battery, wifi, cpuTemp, ram } = body;
+    const { id, type, value, battery, wifi, cpuTemp, ram, frame } = body;
 
     if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
@@ -40,6 +42,21 @@ export async function POST(request: Request) {
         history: JSON.stringify(history),
       },
     });
+
+    if (frame && typeof frame === "string") {
+      try {
+        const framesDir = path.join(process.cwd(), "public", "ews_frames");
+        if (!fs.existsSync(framesDir)) {
+          fs.mkdirSync(framesDir, { recursive: true });
+        }
+        const filePath = path.join(framesDir, `${id}.jpg`);
+        const base64Data = frame.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        fs.writeFileSync(filePath, buffer);
+      } catch (err) {
+        console.error("Failed to save EWS frame:", (err as any)?.message || err);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (e: any) {

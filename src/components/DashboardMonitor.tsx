@@ -28,6 +28,7 @@ export default function DashboardMonitor() {
   const [stations, setStations] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [target, setTarget] = useState<[number, number] | null>(null);
+  const [frameTick, setFrameTick] = useState(0);
 
   // Ambil data detail perangkat yang sedang dipilih dari list devices
   const selectedDevice = useMemo(() => {
@@ -37,15 +38,39 @@ export default function DashboardMonitor() {
   const fetchData = useCallback(async () => {
     try {
       const [liveRes, stationRes] = await Promise.all([
-        fetch("/sungai/api/ews/push"),
-        fetch("/sungai/api/admin/devices")
+        fetch("/api/ews/push"),
+        fetch("/api/admin/devices")
       ]);
       
       const liveData = await liveRes.json();
       const stationData = await stationRes.json();
+
+      const mergedDevices = Array.isArray(liveData)
+        ? liveData
+            .map((node: any) => {
+              const st = Array.isArray(stationData)
+                ? stationData.find(
+                    (s: any) => s.sensor_code === node.id || s.name === node.id
+                  )
+                : null;
+              if (!st) return null;
+              return {
+                ...node,
+                stationId: st.id,
+                name: st.name,
+                location: st.location,
+                latitude: st.latitude,
+                longitude: st.longitude,
+                status: st.status,
+                description: st.description,
+                sensor_code: st.sensor_code,
+              };
+            })
+            .filter(Boolean)
+        : [];
       
-      setStations(stationData);
-      setDevices(liveData);
+      setStations(Array.isArray(stationData) ? stationData : []);
+      setDevices(mergedDevices as any[]);
     } catch (e) {
       console.error("Monitor Fetch Error:", e);
     }
@@ -56,6 +81,14 @@ export default function DashboardMonitor() {
     const timer = setInterval(fetchData, 5000); 
     return () => clearInterval(timer);
   }, [fetchData]);
+
+   useEffect(() => {
+    if (!selectedId) return;
+    const timer = setInterval(() => {
+      setFrameTick(p => p + 1);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [selectedId]);
 
   const getIcon = (d: any) => {
     const isDanger = d.type === "flood" ? d.lastValue > 200 : d.lastValue > 10;
@@ -68,7 +101,11 @@ export default function DashboardMonitor() {
   };
 
   const getDevicePosition = (deviceId: string): [number, number] => {
-    const station = stations.find(s => s.sensor_code === deviceId || s.name === deviceId);
+    const device = devices.find(d => d.id === deviceId);
+    if (device && typeof device.latitude === "number" && typeof device.longitude === "number") {
+      return [device.latitude, device.longitude];
+    }
+    const station = stations.find((s: any) => s.sensor_code === deviceId || s.name === deviceId);
     if (station) return [station.latitude, station.longitude];
     return [-7.36, 109.68];
   };
@@ -114,25 +151,26 @@ export default function DashboardMonitor() {
                 <>
                   <div className="relative h-44 w-full mb-4 overflow-hidden rounded-2xl border-2 border-white shadow-lg group">
                     {(() => {
-                      // Logic untuk memilih foto secara variatif berdasarkan ID perangkat
                       const imgNum = (selectedDevice.id.charCodeAt(selectedDevice.id.length - 1) % 3) + 1;
-                      let imgSrc = "/sungai/logo.png";
-                      
+                      let fallbackSrc = "/logo.png";
                       if (selectedDevice.type === 'flood') {
-                        imgSrc = `/sungai/flood${imgNum}.jpg`;
+                        fallbackSrc = `/flood${imgNum}.jpg`;
                       } else if (selectedDevice.type === 'landslide') {
-                        // Memperhitungkan typo 'lanslide1.jpg' pada file pertama
-                        imgSrc = imgNum === 1 ? "/sungai/lanslide1.jpg" : `/sungai/landslide${imgNum}.jpg`;
+                        fallbackSrc = imgNum === 1 ? "/lanslide1.jpg" : `/landslide${imgNum}.jpg`;
                       } else {
-                        imgSrc = "/sungai/earthquake1.jpg";
+                        fallbackSrc = "/earthquake1.jpg";
                       }
+                      const liveSrc = `/ews_frames/${selectedDevice.id}.jpg?tick=${frameTick}`;
 
                       return (
                         <img 
-                          src={imgSrc} 
+                          src={liveSrc} 
                           alt={`EWS ${selectedDevice.type}`}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          onError={(e: any) => { e.target.src = "/sungai/orion-dark.jpg"; }}
+                          onError={(e: any) => {
+                            e.target.onerror = null;
+                            e.target.src = fallbackSrc;
+                          }}
                         />
                       );
                     })()}
