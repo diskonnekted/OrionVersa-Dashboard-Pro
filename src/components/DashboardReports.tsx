@@ -12,12 +12,25 @@ export default function DashboardReports() {
     setReports(data);
   }, []);
 
+  const DISASTER_MAP: Record<string, { color: string, icon: string }> = {
+    "Longsor": { color: "#a855f7", icon: "fa-hill-rockslide" },
+    "Banjir": { color: "#3b82f6", icon: "fa-house-flood-water" },
+    "Kebakaran": { color: "#ef4444", icon: "fa-fire" },
+    "Angin Kencang": { color: "#06b6d4", icon: "fa-wind" },
+    "Gempa Bumi": { color: "#f59e0b", icon: "fa-house-crack" }
+  };
+
   const getIcon = (r: any) => {
-    const color = r.status === 'Ditangani' ? '#10b981' : (r.status === 'Proses Validasi' ? '#f59e0b' : '#6366f1');
+    const config = DISASTER_MAP[r.type] || { color: "#6366f1", icon: "fa-triangle-exclamation" };
+    const statusColor = r.status === 'Ditangani' ? '#10b981' : (r.status === 'Proses Validasi' ? '#f59e0b' : '#6366f1');
+    
     return L.divIcon({
       className: "report-icon",
-      html: `<div style="background-color:${color};width:24px;height:24px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 5px rgba(0,0,0,0.2);"><i class="fa-solid fa-triangle-exclamation"></i></div>`,
-      iconSize: [24,24], iconAnchor: [12,12]
+      html: `<div style="background-color:${config.color};width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.3);position:relative;">
+              <i class="fa-solid ${config.icon} text-[10px]"></i>
+              ${r.status === 'Ditangani' ? '<div style="position:absolute;top:-2px;right:-2px;background:#10b981;width:12px;height:12px;border-radius:50%;border:1.5px solid white;display:flex;align-items:center;justify-content:center;font-size:6px;"><i class="fa-solid fa-check"></i></div>' : ''}
+            </div>`,
+      iconSize: [28,24], iconAnchor: [14,14]
     });
   };
 
@@ -29,7 +42,7 @@ export default function DashboardReports() {
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Informasi Progres Kejadian</p>
         </div>
         
-        <a href="/report" target="_blank" className="w-full py-3 bg-indigo-600 text-white text-center rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-indigo-700">Kirim Laporan Baru</a>
+        <a href="/sungai/report" target="_blank" className="w-full py-3 bg-indigo-600 text-white text-center rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-indigo-700">Kirim Laporan Baru</a>
 
         <div className="flex-1 overflow-y-auto space-y-3 mt-4">
           <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b pb-1">Daftar Kejadian</h4>
@@ -56,7 +69,13 @@ export default function DashboardReports() {
       </aside>
 
       <main className="flex-1 relative h-full">
-        <MapContainer center={[-7.36, 109.68]} zoom={11} className="h-full w-full" zoomControl={false}>
+        <MapContainer 
+          center={[-7.36, 109.68]} 
+          zoom={11} 
+          maxBounds={[[-7.7, 109.2], [-7.0, 110.1]]}
+          className="h-full w-full" 
+          zoomControl={false}
+        >
           <ZoomControl position="topright" />
           <ScaleControl position="bottomright" />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

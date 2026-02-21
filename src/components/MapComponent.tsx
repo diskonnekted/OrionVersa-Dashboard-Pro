@@ -5,6 +5,7 @@ import DashboardAnalysis from "./DashboardAnalysis";
 import DashboardMonitor from "./DashboardMonitor";
 import DashboardReports from "./DashboardReports";
 import DashboardAdmin from "./DashboardAdmin";
+import DisasterManagement from "./DisasterManagement";
 import { AlertTriangle, BellRing, ShieldAlert, Wifi } from "lucide-react";
 
 export default function MapComponent() {
@@ -23,7 +24,8 @@ export default function MapComponent() {
         setEwsAlert(hasDanger);
 
         // 2. Check Unvalidated Reports
-        const reports = JSON.parse(localStorage.getItem("orion_reports") || "[]");
+        const res = await fetch("/sungai/api/reports");
+        const reports = await res.json();
         const hasNewReport = reports.some((r: any) => !r.isValidated);
         setReportAlert(hasNewReport);
       } catch (e) {}
@@ -42,7 +44,7 @@ export default function MapComponent() {
           <img src="/sungai/logo.png" alt="Orion Logo" className="h-10 w-auto rounded object-contain" />
           <div className="flex flex-col leading-none">
             <span className="font-black text-slate-800 text-sm tracking-tight uppercase">Orion Intelligence</span>
-            <span className="text-[8px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-0.5">Banjarnegara Command</span>
+            <span className="text-[8px] text-slate-400 font-bold tracking-[0.2em] uppercase mt-0.5">Banjarnegara Command Center</span>
           </div>
         </div>
 
@@ -69,6 +71,7 @@ export default function MapComponent() {
             { id: "analysis", label: "Analysis", color: "text-red-600" },
             { id: "monitor", label: "Monitor EWS", color: "text-green-600" },
             { id: "reports", label: "Reporting", color: "text-blue-600" },
+            { id: "log", label: "Log Bencana", color: "text-amber-600" },
             { id: "admin", label: "Admin", color: "text-slate-800" }
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all duration-300 ${activeTab===tab.id ? "bg-white shadow-lg translate-y-[-1px] " + tab.color : "text-slate-400 hover:text-slate-600"}`}>
@@ -84,6 +87,7 @@ export default function MapComponent() {
         {activeTab === "analysis" && <DashboardAnalysis />}
         {activeTab === "monitor" && <DashboardMonitor />}
         {activeTab === "reports" && <DashboardReports />}
+        {activeTab === "log" && <DisasterManagement />}
         {activeTab === "admin" && <DashboardAdmin />}
       </div>
     </div>

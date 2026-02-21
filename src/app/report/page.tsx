@@ -105,20 +105,20 @@ export default function PublicReport() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">Kecamatan</label>
-              <select value={district} onChange={(e)=>handleDistrictChange(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none">
+              <select value={district} onChange={(e)=>handleDistrictChange(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none text-slate-900">
                 {Object.keys(REGION_DATA).map(d => <option key={d}>{d}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">Desa/Kelurahan</label>
-              <select value={village} onChange={(e)=>setVillage(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none">
+              <select value={village} onChange={(e)=>setVillage(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none text-slate-900">
                 {REGION_DATA[district].map(v => <option key={v}>{v}</option>)}
               </select>
             </div>
           </div>
           <div className="space-y-1">
             <label className="text-[9px] font-black text-slate-400 uppercase">Alamat Detail / Patokan</label>
-            <input value={address} onChange={(e)=>setAddress(e.target.value)} type="text" placeholder="Contoh: Jl. Raya KM 5, depan Masjid..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-medium" required />
+            <input value={address} onChange={(e)=>setAddress(e.target.value)} type="text" placeholder="Contoh: Jl. Raya KM 5, depan Masjid..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-medium text-slate-900" required />
           </div>
         </div>
 
@@ -126,13 +126,13 @@ export default function PublicReport() {
           <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b pb-2 mb-2">Detail Kejadian</h4>
           <div className="space-y-1">
             <label className="text-[9px] font-black text-slate-400 uppercase">Jenis Bencana</label>
-            <select value={type} onChange={(e)=>setType(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none">
+            <select value={type} onChange={(e)=>setType(e.target.value)} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-xs appearance-none text-slate-900">
               <option>Longsor</option><option>Banjir</option><option>Kebakaran</option><option>Angin Kencang</option><option>Gempa Bumi</option>
             </select>
           </div>
           <div className="space-y-1">
             <label className="text-[9px] font-black text-slate-400 uppercase">Deskripsi Kerusakan</label>
-            <textarea value={desc} onChange={(e)=>setDesc(e.target.value)} placeholder="Ceritakan kondisi di lapangan..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs h-20" required />
+            <textarea value={desc} onChange={(e)=>setDesc(e.target.value)} placeholder="Ceritakan kondisi di lapangan..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs h-20 text-slate-900" required />
           </div>
         </div>
 
@@ -141,11 +141,11 @@ export default function PublicReport() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">Nama Lengkap</label>
-              <input value={name} onChange={(e)=>setName(e.target.value)} type="text" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold" required />
+              <input value={name} onChange={(e)=>setName(e.target.value)} type="text" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold text-slate-900" required />
             </div>
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase">No. WhatsApp</label>
-              <input value={phone} onChange={(e)=>setPhone(e.target.value)} type="tel" placeholder="08..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold" required />
+              <input value={phone} onChange={(e)=>setPhone(e.target.value)} type="tel" placeholder="08..." className="w-full p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold text-slate-900" required />
             </div>
           </div>
         </div>

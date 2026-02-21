@@ -102,3 +102,16 @@ model PublicReport {
   timestamp   DateTime @default(now())
 }
 
+model MapFeature {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String   // e.g., "bangunan", "jalan", "bencana"
+  year        Int?     // For disaster history
+  type        String   // "Point", "LineString", "Polygon"
+  geometry    String   // JSON string of coordinates/geometry
+  description String?
+  icon        String?  // For markers
+  color       String?  // For lines/polygons
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt @default(now())
+}
