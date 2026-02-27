@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const markers = await prisma.paste_errors.findMany({
       orderBy: { id: 'desc' },
-      take: 1000 // Limit to avoid performance issues
+      take: 1000
     });
     return NextResponse.json(markers);
   } catch (error) {
@@ -18,8 +18,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { id, name, station, lat, lng, description, noreg, category, status, loksta } = body;
 
-    // Mapping fields for paste_errors model
-    // Using 'status' field to store the Layer ID (Category)
     const data: any = {
       ruasja: name,
       loksta: station || loksta,
@@ -27,18 +25,16 @@ export async function POST(request: Request) {
       lokasi2: String(lng),
       arti: description,
       noreg: noreg,
-      status: category || status || "tempat", // Default to 'tempat' if no category
+      status: category || status || "tempat",
     };
 
     if (id) {
-      // Update
       const marker = await prisma.paste_errors.update({
         where: { id: parseInt(id) },
         data: data
       });
       return NextResponse.json(marker);
     } else {
-      // Create
       const marker = await prisma.paste_errors.create({
         data: data
       });
@@ -55,10 +51,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID tidak ditemukan" }, { status: 400 });
-
-    await prisma.paste_errors.delete({
-      where: { id: parseInt(id) }
-    });
+    await prisma.paste_errors.delete({ where: { id: parseInt(id) } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Gagal menghapus marker" }, { status: 500 });

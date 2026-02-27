@@ -7,6 +7,15 @@ datasource db {
   url = "file:./dev.db"
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String   // In production, use hashing like bcrypt
+  name      String
+  role      String   // "ADMIN", "KEPALA", "USER"
+  created_at DateTime @default(now())
+}
+
 model paste_errors {
   id           Int     @id @default(autoincrement())
   noreg        String? 
@@ -15,10 +24,6 @@ model paste_errors {
   loksta       String? 
   lokasi       String? 
   lokasi2      String? 
-  jenperja     String? 
-  jenperja2    String? 
-  gol          String? 
-  nomorjenis   String? 
   arti         String? 
   gambar       Int?
   poska        String? 
@@ -105,13 +110,13 @@ model PublicReport {
 model MapFeature {
   id          Int      @id @default(autoincrement())
   name        String
-  category    String   // e.g., "bangunan", "jalan", "bencana"
-  year        Int?     // For disaster history
-  type        String   // "Point", "LineString", "Polygon"
-  geometry    String   // JSON string of coordinates/geometry
+  category    String   
+  year        Int?     
+  type        String   
+  geometry    String   
   description String?
-  icon        String?  // For markers
-  color       String?  // For lines/polygons
+  icon        String?  
+  color       String?  
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt @default(now())
 }

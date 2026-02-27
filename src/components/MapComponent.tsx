@@ -1,20 +1,31 @@
 "use client";
 import { useEffect, useState } from "react";
-import DashboardExplorer from "./DashboardExplorer";
-import DashboardAnalysis from "./DashboardAnalysis";
-import DashboardMonitor from "./DashboardMonitor";
-import DashboardReports from "./DashboardReports";
-import DashboardAdmin from "./DashboardAdmin";
-import DisasterManagement from "./DisasterManagement";
-import { AlertTriangle, BellRing, ShieldAlert, Wifi } from "lucide-react";
+import dynamic from "next/dynamic";
+import { AlertTriangle, BellRing, ShieldAlert, Wifi, Database } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+// Lazy load komponen dashboard agar initial load cepat
+const DashboardExplorer = dynamic(() => import("./DashboardExplorer"), { ssr: false });
+const DashboardAnalysis = dynamic(() => import("./DashboardAnalysis"), { ssr: false });
+const DashboardMonitor = dynamic(() => import("./DashboardMonitor"), { ssr: false });
+const DashboardReports = dynamic(() => import("./DashboardReports"), { ssr: false });
+const DashboardAdmin = dynamic(() => import("./DashboardAdmin"), { ssr: false });
+const DisasterManagement = dynamic(() => import("./DisasterManagement"), { ssr: false });
 
 export default function MapComponent() {
   const [activeTab, setActiveTab] = useState("explorer");
   const [ewsAlert, setEwsAlert] = useState(false);
   const [reportAlert, setReportAlert] = useState(false);
+  const router = useRouter();
 
-  // Monitor Global Status
   useEffect(() => {
+    // 0. Auth Protection
+    const user = localStorage.getItem("orion_user");
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
     const checkAlerts = async () => {
       try {
         // 1. Check EWS Danger Signals

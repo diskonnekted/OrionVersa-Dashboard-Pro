@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { MapContainer, TileLayer, GeoJSON, ZoomControl, useMap, ScaleControl, Marker, Popup, Polyline, Circle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -36,6 +36,7 @@ export default function DashboardAnalysis() {
   const [vulnerableBuildings, setVulnerableBuildings] = useState<any | null>(null);
   const [steepSlopeBuildings, setSteepSlopeBuildings] = useState<any | null>(null);
   const [results, setResults] = useState<any[] | null>(null);
+  const [hotspotFilter, setHotspotFilter] = useState({ tinggi: true, menengah: true, rendah: true });
   const [ewsRecommendations, setEwsRecommendations] = useState<any[]>([]);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [quakeData, setQuakeData] = useState<any>(null);
@@ -46,43 +47,90 @@ export default function DashboardAnalysis() {
   const [villageStats, setVillageStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showRiverLines, setShowRiverLines] = useState(false);
+  const [showRiverAreas, setShowRiverAreas] = useState(false);
   const stopRef = useRef(false);
+  const activeToolRef = useRef(activeTool);
+
+  const hotspotValueById = useMemo(() => {
+    const map = new Map<number, number>();
+    (results || []).forEach((r: any) => {
+      if (typeof r?.id === "number" && typeof r?.val === "number") map.set(r.id, r.val);
+    });
+    return map;
+  }, [results]);
+
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
 
   useEffect(() => {
     const files = ["peta_desa.geojson", "sungai.geojson", "tanah-jateng.geojson", "jalan.geojson", "buildings_banjarnegara.geojson", "kontur-banjarnegara.geojson", "bencana-banjarnegara-2024.geojson", "bencana-banjarnegara-2023.geojson", "bencana-banjarnegara-2022.geojson", "bencana-banjarnegara-2021.geojson"];
     files.forEach(f => {
       if(!data[f]) fetch("/sungai/data/"+f).then(r=>r.json()).then(d=>setData(p=>({...p, [f]:d}))).catch(()=>{});
     });
+    fetch("/sungai/data/KAB. BANJARNEGARA/sungai").then(r=>r.json()).then(d=>setData(p=>({...p, "sungai_line": d}))).catch(()=>{});
+    fetch("/sungai/data/KAB. BANJARNEGARA/sungai_area.geojson").then(r=>r.json()).then(d=>setData(p=>({...p, "sungai_area": d}))).catch(()=>{});
     fetch("/sungai/api/locations").then(r=>r.json()).then(d=>setData(p=>({...p, "dynamic": d})));
   }, []);
 
   const handleVillageClick = async (feature: any) => {
     setLoading(true); setProgress(10);
-    let lsCount = 0;
-    ["2024","2023","2022","2021"].forEach(y => {
-      const d = data[`bencana-banjarnegara-${y}.geojson`];
-      if(d) lsCount += d.features.filter((p: any) => turf.booleanPointInPolygon(p, feature)).length;
-    });
-    setProgress(40);
-    const centroid = turf.centroid(feature);
-    const soil = data["tanah-jateng.geojson"]?.features?.find((s: any) => turf.booleanPointInPolygon(centroid, s));
-    setProgress(60);
-    let riverPercent = 0;
     try {
-      const rivers = data["sungai.geojson"];
-      if(rivers) {
-        const simplifiedRivers = turf.simplify(rivers, {tolerance: 0.005});
-        const riverBuffer = turf.buffer(simplifiedRivers, 0.1, {units: 'kilometers'});
-        const intersection = turf.intersect(turf.featureCollection([feature, riverBuffer] as any));
-        if (intersection) {
-          const villageArea = turf.area(feature);
-          const intersectArea = turf.area(intersection);
-          riverPercent = Math.round((intersectArea / villageArea) * 100);
+      let lsCount = 0;
+      ["2024","2023","2022","2021"].forEach(y => {
+        const d = data[`bencana-banjarnegara-${y}.geojson`];
+        if(d) lsCount += d.features.filter((p: any) => turf.booleanPointInPolygon(p, feature)).length;
+      });
+      setProgress(40);
+      const centroid = turf.centroid(feature);
+      const soil = data["tanah-jateng.geojson"]?.features?.find((s: any) => turf.booleanPointInPolygon(centroid, s));
+      setProgress(60);
+      let riverPercent = 0;
+      try {
+        const rivers = data["sungai.geojson"];
+        if(rivers) {
+          const simplifiedRivers = turf.simplify(rivers, {tolerance: 0.005});
+          const riverBuffer = turf.buffer(simplifiedRivers, 0.1, {units: 'kilometers'});
+          if (riverBuffer) {
+            const bufferPolys = turf.flatten(riverBuffer as any).features;
+            const villageAreaKm2 = turf.area(feature) / 1_000_000;
+            let cellSideKm =
+              villageAreaKm2 > 50 ? 0.6 :
+              villageAreaKm2 > 10 ? 0.3 :
+              villageAreaKm2 > 3 ? 0.2 :
+              0.15;
+
+            const bbox = turf.bbox(feature as any);
+            let grid = turf.pointGrid(bbox as any, cellSideKm, { units: "kilometers" });
+            let inVillage = grid.features.filter((pt: any) => turf.booleanPointInPolygon(pt, feature));
+
+            if (inVillage.length > 3000) {
+              cellSideKm *= 1.5;
+              grid = turf.pointGrid(bbox as any, cellSideKm, { units: "kilometers" });
+              inVillage = grid.features.filter((pt: any) => turf.booleanPointInPolygon(pt, feature));
+            }
+
+            if (inVillage.length > 0) {
+              const inBufferCount = inVillage.reduce((acc: number, pt: any) => {
+                const hit = bufferPolys.some((poly: any) => {
+                  if (!poly?.geometry) return false;
+                  return turf.booleanPointInPolygon(pt, poly);
+                });
+                return acc + (hit ? 1 : 0);
+              }, 0);
+
+              riverPercent = Math.min(100, Math.round((inBufferCount / inVillage.length) * 100));
+            }
+          }
         }
-      }
-    } catch(e) {}
-    setProgress(100);
-    setVillageStats({ name: feature.properties.Nama_Desa_ || "N/A", landslides: lsCount, soil: soil?.properties?.MACAM_TANA || "N/A", riverRisk: riverPercent, district: feature.properties.Kecamatan || "Banjarnegara" });
+      } catch {}
+      setProgress(100);
+      setVillageStats({ name: feature.properties.Nama_Desa_ || "N/A", landslides: lsCount, soil: soil?.properties?.MACAM_TANA || "N/A", riverRisk: riverPercent, district: feature.properties.Kecamatan || "Banjarnegara" });
+    } catch (error) {
+      console.error("Village analysis error", error);
+      alert("Gagal menganalisis desa.");
+    }
     setTimeout(() => setLoading(false), 500);
   };
 
@@ -94,14 +142,17 @@ export default function DashboardAnalysis() {
 
     if (toolId === "hotspot") {
       const vGeo = data["peta_desa.geojson"];
+      if (!vGeo) { alert("Data Peta Desa belum siap."); setLoading(false); return; }
       const coll = turf.featureCollection(allDisasters);
       let res: any[] = [];
       for(let i=0; i<vGeo.features.length; i++) {
         if(stopRef.current) break;
         const count = turf.pointsWithinPolygon(coll as any, vGeo.features[i]).features.length;
         res.push({ id: vGeo.features[i].properties.OBJECTID, val: count });
-        if(i%20===0) setProgress(Math.round((i/vGeo.features.length)*100));
-        await new Promise(r=>setTimeout(r,5));
+        if(i%20===0) {
+          setProgress(Math.round((i/vGeo.features.length)*100));
+          await new Promise(r=>setTimeout(r,1));
+        }
       }
       setResults(res);
     }
@@ -109,17 +160,56 @@ export default function DashboardAnalysis() {
       const roads = data["jalan.geojson"];
       const buildings = data["buildings_banjarnegara.geojson"];
       const rivers = data["sungai.geojson"];
-      if(!roads || !buildings || !rivers) return alert("Data belum lengkap.");
-      const riverBuffer = turf.buffer(turf.simplify(rivers, {tolerance:0.005}), 0.1, {units:'kilometers'});
-      const dangerZone = turf.buffer(disasterPoints, 0.1, {units:'kilometers'});
-      const totalZone = turf.union(turf.featureCollection([riverBuffer, dangerZone] as any));
-      const atRiskRoads = roads.features.filter((r:any, i:number) => {
-        if(i%100===0) setProgress(Math.round((i/roads.features.length)*100));
-        return turf.booleanIntersects(r, totalZone as any);
-      });
-      setVulnerableRoads(turf.featureCollection(atRiskRoads));
-      const atRiskBuildings = buildings.features.slice(0, 300).filter((b:any) => turf.booleanIntersects(b, totalZone as any));
-      setVulnerableBuildings(turf.featureCollection(atRiskBuildings));
+      if(!roads || !buildings || !rivers) { alert("Data belum lengkap (Jalan/Bangunan/Sungai)."); setLoading(false); return; }
+      
+      try {
+        const simplifiedRivers = turf.simplify(rivers, {tolerance:0.005});
+        const riverBuffer = turf.buffer(simplifiedRivers, 0.1, {units:'kilometers'});
+        const dangerZone = turf.buffer(disasterPoints, 0.1, {units:'kilometers'});
+        
+        const hazardPolygons = [
+          ...(riverBuffer ? turf.flatten(riverBuffer as any).features : []),
+          ...(dangerZone ? turf.flatten(dangerZone as any).features : [])
+        ];
+        
+        const atRiskRoads = [];
+        const roadFeatures = roads.features;
+        const chunkSize = 50;
+        
+        for (let i = 0; i < roadFeatures.length; i += chunkSize) {
+          if (stopRef.current) break;
+          const chunk = roadFeatures.slice(i, i + chunkSize);
+          
+          for (const r of chunk) {
+             const isRisk = hazardPolygons.some(poly => !turf.booleanDisjoint(r, poly));
+             if (isRisk) atRiskRoads.push(r);
+          }
+          
+          setProgress(Math.round((i / roadFeatures.length) * 50));
+          await new Promise(r => setTimeout(r, 1));
+        }
+        
+        setVulnerableRoads(turf.featureCollection(atRiskRoads));
+
+        const buildingFeatures = buildings.features.slice(0, 500);
+        const atRiskBuildings = [];
+        
+        for (let i = 0; i < buildingFeatures.length; i+=chunkSize) {
+           if (stopRef.current) break;
+           const chunk = buildingFeatures.slice(i, i+chunkSize);
+           for (const b of chunk) {
+             const isRisk = hazardPolygons.some(poly => !turf.booleanDisjoint(b, poly));
+             if (isRisk) atRiskBuildings.push(b);
+           }
+           setProgress(50 + Math.round((i / buildingFeatures.length) * 50));
+           await new Promise(r => setTimeout(r, 1));
+        }
+        
+        setVulnerableBuildings(turf.featureCollection(atRiskBuildings));
+      } catch (e) {
+        console.error(e);
+        alert("Terjadi kesalahan analisis infrastruktur.");
+      }
     }
     else if (toolId === "landslide_risk") {
       try {
@@ -145,6 +235,9 @@ export default function DashboardAnalysis() {
       const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=-7.36&longitude=109.68&daily=rain_sum,precipitation_probability_max&timezone=auto");
       const json = await res.json(); setWeatherData(json.daily); setProgress(100);
     }
+    else if (toolId === "slope_vulnerability") {
+       alert("Data model elevasi digital (DEM) untuk analisis lereng belum tersedia.");
+    }
     
     setLoading(false);
   };
@@ -164,6 +257,16 @@ export default function DashboardAnalysis() {
           {!activeTool ? (
             <div className="space-y-2">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-2 mb-4">Pilih Instrumen</h4>
+              <div className="mb-4 space-y-2">
+                <label className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-xl cursor-pointer hover:bg-blue-100 transition-all">
+                  <span className="text-[10px] font-black text-blue-800 uppercase flex items-center gap-2"><Activity className="w-3 h-3" /> Tampilkan Alur Sungai</span>
+                  <input type="checkbox" checked={showRiverLines} onChange={(e)=>setShowRiverLines(e.target.checked)} className="accent-blue-600" />
+                </label>
+                <label className="flex items-center justify-between p-3 bg-cyan-50 border border-cyan-100 rounded-xl cursor-pointer hover:bg-cyan-100 transition-all">
+                  <span className="text-[10px] font-black text-cyan-800 uppercase flex items-center gap-2"><Droplets className="w-3 h-3" /> Tampilkan Area Sungai</span>
+                  <input type="checkbox" checked={showRiverAreas} onChange={(e)=>setShowRiverAreas(e.target.checked)} className="accent-cyan-600" />
+                </label>
+              </div>
               {TOOLS.map(t => (
                 <button key={t.id} onClick={()=>{setActiveTool(t.id); setResults(null); setVulnerableRoads(null); setVillageStats(null); setNasaData([]); setNasaLandslides([]); setRainRisk(null); setWeatherData(null); setQuakeData(null);}} className="w-full text-left p-4 border-2 border-slate-50 rounded-2xl hover:border-red-500 hover:bg-red-50 transition-all group">
                   <div className="flex items-center gap-3 font-black text-xs uppercase text-slate-700 group-hover:text-red-700">
@@ -182,6 +285,62 @@ export default function DashboardAnalysis() {
                 <h3 className="font-black text-red-900 uppercase text-xs mb-1">{(TOOLS.find((t: any)=>t.id===activeTool) as any).title}</h3>
                 <p className="text-[10px] text-red-700 italic">{(TOOLS.find((t: any)=>t.id===activeTool) as any).desc}</p>
               </div>
+
+              {activeTool === "stats" && (
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Cara Penggunaan</p>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-slate-600 leading-snug">
+                      1) Klik area/poligon desa di peta untuk menampilkan profil risiko.
+                    </p>
+                    <p className="text-[10px] text-slate-600 leading-snug">
+                      2) Data ringkas akan muncul di sidebar (jumlah bencana historis, risiko bantaran sungai, jenis tanah).
+                    </p>
+                    <p className="text-[10px] text-slate-600 leading-snug">
+                      3) Klik desa lain untuk membandingkan, atau kembali ke menu untuk memilih analisis lain.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activeTool === "hotspot" && results && (
+                <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-3">
+                  <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Filter Tingkat</p>
+                  <label className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={hotspotFilter.tinggi}
+                        onChange={(e) => setHotspotFilter((p) => ({ ...p, tinggi: e.target.checked }))}
+                      />
+                      <span className="text-[10px] font-bold text-slate-700">Tinggi</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-500">{"> 10"}</span>
+                  </label>
+                  <label className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={hotspotFilter.menengah}
+                        onChange={(e) => setHotspotFilter((p) => ({ ...p, menengah: e.target.checked }))}
+                      />
+                      <span className="text-[10px] font-bold text-slate-700">Menengah</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-500">{"6 - 10"}</span>
+                  </label>
+                  <label className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={hotspotFilter.rendah}
+                        onChange={(e) => setHotspotFilter((p) => ({ ...p, rendah: e.target.checked }))}
+                      />
+                      <span className="text-[10px] font-bold text-slate-700">Rendah</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-500">{"0 - 5"}</span>
+                  </label>
+                </div>
+              )}
 
               {activeTool === "stats" && villageStats && (
                 <div className="space-y-4 animate-in zoom-in-95">
@@ -212,7 +371,7 @@ export default function DashboardAnalysis() {
                 </div>
               )}
 
-              {!loading && !results && !vulnerableRoads && !steepSlopeBuildings && !weatherData && !quakeData && ewsRecommendations.length === 0 && nasaData.length === 0 && nasaLandslides.length === 0 && (
+              {activeTool !== "stats" && !loading && !results && !vulnerableRoads && !steepSlopeBuildings && !weatherData && !quakeData && ewsRecommendations.length === 0 && nasaData.length === 0 && nasaLandslides.length === 0 && (
                 <button onClick={()=>runAnalysis(activeTool)} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase shadow-lg hover:bg-red-700 flex items-center justify-center gap-2 active:scale-95 transition-all">
                   <Zap className="w-4 h-4" /> Jalankan Analisis
                 </button>
@@ -233,18 +392,29 @@ export default function DashboardAnalysis() {
         <MapContainer center={[-7.36, 109.68]} zoom={11} maxBounds={[[-7.7, 109.2], [-7.0, 110.1]]} className="h-full w-full" zoomControl={false}>
           <ZoomControl position="topright" /><ScaleControl position="bottomright" /><TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           
+          {showRiverLines && data["sungai_line"] && <GeoJSON data={data["sungai_line"]} style={() => ({ color: "#3b82f6", weight: 1.5, opacity: 0.8, smoothFactor: 0, noClip: true })} />}
+          {showRiverAreas && data["sungai_area"] && <GeoJSON data={data["sungai_area"]} style={() => ({ color: "#0ea5e9", fillColor: "#0ea5e9", fillOpacity: 0.5, weight: 0 })} />}
+
           {data["peta_desa.geojson"] && (
             <GeoJSON data={data["peta_desa.geojson"]} 
               style={(f: any) => {
                 if (results) {
-                  const r = results.find((x: any) => x.id === f.properties.OBJECTID);
-                  const color = r?.val > 10 ? "#7f1d1d" : (r?.val > 5 ? "#dc2626" : (r?.val > 0 ? "#f87171" : "#10b981"));
+                  const val = hotspotValueById.get(f.properties.OBJECTID) ?? 0;
+                  const color = val > 10 ? "#7f1d1d" : (val > 5 ? "#dc2626" : (val > 0 ? "#f87171" : "#10b981"));
                   return { fillColor: color, fillOpacity: 0.6, color: "#fff", weight: 0.5 };
                 }
                 const isSel = villageStats?.name === f.properties.Nama_Desa_;
                 return { color: isSel?"#ef4444":"#64748b", weight: isSel?3:1, fillOpacity: isSel?0.3:0.05, fillColor: isSel?"#ef4444":"#fff" };
               }}
-              onEachFeature={(f,l) => l.on('click', () => { if(activeTool==="stats") handleVillageClick(f); })} 
+              filter={(f: any) => {
+                if (!results) return true;
+                if (activeToolRef.current !== "hotspot") return true;
+                const val = hotspotValueById.get(f.properties.OBJECTID) ?? 0;
+                if (val > 10) return hotspotFilter.tinggi;
+                if (val > 5) return hotspotFilter.menengah;
+                return hotspotFilter.rendah;
+              }}
+              onEachFeature={(f,l) => l.on('click', () => { if(activeToolRef.current==="stats") handleVillageClick(f); })} 
             />
           )}
 

@@ -6,16 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "optimize:perlengkapan": "node scripts/optimize_perlengkapan.mjs"
   },
   "dependencies": {
     "@turf/turf": "^7.3.4",
+    "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "react": "19.2.3",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.3",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "react-leaflet-cluster": "^4.0.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@prisma/client": "^6.19.2",

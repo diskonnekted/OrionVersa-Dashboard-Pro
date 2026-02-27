@@ -18,15 +18,11 @@ export async function POST(request: Request) {
     const { id, name, category, year, type, geometry, description, icon, color } = body;
 
     const data: any = {
-      name,
-      category,
+      name, category,
       year: year ? parseInt(String(year)) : null,
       type,
       geometry: typeof geometry === 'string' ? geometry : JSON.stringify(geometry),
-      description,
-      icon,
-      color,
-      updated_at: new Date()
+      description, icon, color, updated_at: new Date()
     };
 
     if (id) {
@@ -52,10 +48,7 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "ID tidak ditemukan" }, { status: 400 });
-
-    await prisma.mapFeature.delete({
-      where: { id: parseInt(id) }
-    });
+    await prisma.mapFeature.delete({ where: { id: parseInt(id) } });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Gagal menghapus fitur" }, { status: 500 });

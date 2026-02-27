@@ -6,7 +6,6 @@ export async function GET() {
     const reports = await prisma.publicReport.findMany({
       orderBy: { timestamp: 'desc' }
     });
-    // Parse verif field from string to JSON
     const parsedReports = reports.map(r => ({
       ...r,
       verif: typeof r.verif === 'string' ? JSON.parse(r.verif) : r.verif
@@ -22,19 +21,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { id, lat, lng, type, district, village, address, desc, name, phone, photo, status, isValidated, verif } = body;
 
-    if (id && id > 1000000000000) { // If it looks like a temporary frontend ID, don't use it as primary key
-      // This is a new report
+    if (id && id > 1000000000000) {
       const report = await prisma.publicReport.create({
         data: {
           lat: parseFloat(lat),
           lng: parseFloat(lng),
-          type,
-          district,
-          village,
-          address,
-          desc,
-          name,
-          phone,
+          type, district, village, address, desc, name, phone,
           photo: photo || "",
           status: status || "Diterima",
           isValidated: isValidated || false,
@@ -43,7 +35,6 @@ export async function POST(request: Request) {
       });
       return NextResponse.json(report);
     } else if (id) {
-      // Update existing
       const report = await prisma.publicReport.update({
         where: { id: parseInt(id) },
         data: {
@@ -54,7 +45,6 @@ export async function POST(request: Request) {
       });
       return NextResponse.json(report);
     } else {
-      // Create new without ID
       const report = await prisma.publicReport.create({
         data: {
           lat: parseFloat(lat),
@@ -76,7 +66,6 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID missing" }, { status: 400 });
-
   try {
     await prisma.publicReport.delete({ where: { id: parseInt(id) } });
     return NextResponse.json({ success: true });

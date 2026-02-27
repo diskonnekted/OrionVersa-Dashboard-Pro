@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, ScaleControl } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap, ScaleControl, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -28,6 +28,7 @@ export default function DashboardMonitor() {
   const [stations, setStations] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [target, setTarget] = useState<[number, number] | null>(null);
+  const [petaDesa, setPetaDesa] = useState<any>(null);
 
   // Ambil data detail perangkat yang sedang dipilih dari list devices
   const selectedDevice = useMemo(() => {
@@ -53,6 +54,12 @@ export default function DashboardMonitor() {
 
   useEffect(() => {
     fetchData();
+    // Fetch Peta Desa
+    fetch("/sungai/data/peta_desa.geojson")
+      .then(res => res.json())
+      .then(data => setPetaDesa(data))
+      .catch(err => console.error("Failed to load peta desa:", err));
+
     const timer = setInterval(fetchData, 5000); 
     return () => clearInterval(timer);
   }, [fetchData]);
@@ -60,10 +67,39 @@ export default function DashboardMonitor() {
   const getIcon = (d: any) => {
     const isDanger = d.type === "flood" ? d.lastValue > 200 : d.lastValue > 10;
     const color = isDanger ? '#ef4444' : '#10b981';
+    const iconFile =
+      d.type === "flood"
+        ? "simple-water-level-station-svgrepo-com.svg"
+        : d.type === "landslide"
+          ? "warning-steep-slope-failure-landslide-svgrepo-com.svg"
+          : "wireless-early-warning-broadcast-station-svgrepo-com.svg";
+    
+    const svgHtml = `
+      <div style="position: relative; width: 40px; height: 50px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+        <style>
+          @keyframes ewsPulse {
+            0% { transform: scale(0.9); opacity: 0.75; }
+            70% { transform: scale(1.35); opacity: 0.15; }
+            100% { transform: scale(0.9); opacity: 0.0; }
+          }
+        </style>
+        <svg width="40" height="50" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 0C9.096 0 0.25 8.954 0.25 20C0.25 34.25 20 49.75 20 49.75C20 49.75 39.75 34.25 39.75 20C39.75 8.954 30.904 0 20 0Z" fill="${color}"/>
+          <circle cx="20" cy="20" r="14" fill="rgba(255,255,255,0.2)"/>
+        </svg>
+        <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+          <img src="/sungai/svg/${iconFile}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+        </div>
+        ${isDanger ? '<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #ef4444; border: 2px solid white;"></div><div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: rgba(239,68,68,0.6); animation: ewsPulse 1.5s infinite; pointer-events: none;"></div>' : ''}
+      </div>
+    `;
+
     return L.divIcon({ 
-      className: "ews-icon", 
-      html: `<div style="background-color:${color};width:32px;height:32px;border-radius:8px;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 4px 10px rgba(0,0,0,0.3);"><i class="fa-solid ${d.type==='flood'?'fa-water':'fa-mountain-set'}"></i></div>`, 
-      iconSize: [32,32], iconAnchor: [16,16] 
+      className: "ews-marker-pin", 
+      html: svgHtml, 
+      iconSize: [40, 50], 
+      iconAnchor: [20, 50],
+      popupAnchor: [0, -50]
     });
   };
 
@@ -190,6 +226,17 @@ export default function DashboardMonitor() {
           <ZoomControl position="topright" /><ScaleControl position="bottomright" />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <FlyTo target={target} />
+          {petaDesa && (
+            <GeoJSON 
+              data={petaDesa} 
+              style={{ color: "#64748b", weight: 1, fillOpacity: 0.1, fillColor: "#cbd5e1" } as any}
+              onEachFeature={(feature: any, layer: any) => {
+                if (feature.properties) {
+                  layer.bindPopup(`<div class="text-[10px] font-black uppercase">${feature.properties.Nama_Desa_ || feature.properties.name || "Desa"}</div>`);
+                }
+              }}
+            />
+          )}
           {devices.map((d: any) => (
             <Marker key={d.id} position={getDevicePosition(d.id)} icon={getIcon(d)} eventHandlers={{ click: () => { setSelectedId(d.id); setTarget(getDevicePosition(d.id)); } }}>
               <Popup><div className="text-[10px] font-black uppercase">{d.id}</div></Popup>
