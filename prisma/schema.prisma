@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url = env("DATABASE_URL") // Uses connection pooling
-  directUrl = env("POSTGRES_URL_NON_POOLING") // Uses a direct connection
+  url = env("orionpro_PRISMA_DATABASE_URL") // Uses connection pooling
+  directUrl = env("orionpro_POSTGRES_URL") // Uses a direct connection (assuming this is the direct URL provided by Vercel)
 }
 
 model User {
