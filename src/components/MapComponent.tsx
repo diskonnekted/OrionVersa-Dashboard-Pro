@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertTriangle, BellRing, ShieldAlert, Wifi, Database } from "lucide-react";
+import { AlertTriangle, BellRing, ShieldAlert, Wifi, Database, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // Lazy load komponen dashboard agar initial load cepat
 const DashboardExplorer = dynamic(() => import("./DashboardExplorer"), { ssr: false });
@@ -85,15 +86,18 @@ export default function MapComponent() {
             { id: "log", label: "Log Bencana", color: "text-amber-600" },
             { id: "admin", label: "Admin", color: "text-slate-800" }
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all duration-300 ${activeTab===tab.id ? "bg-white shadow-lg translate-y-[-1px] " + tab.color : "text-slate-400 hover:text-slate-600"}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all duration-300 ${activeTab === tab.id ? "bg-white shadow-lg text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
               {tab.label}
             </button>
           ))}
+          <Link href="/portal" target="_blank" className="px-4 py-2 rounded-xl text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100 flex items-center gap-1 transition-all">
+            <Globe className="w-3 h-3" /> Portal
+          </Link>
         </div>
       </header>
 
       {/* INDEPENDENT WORKSPACES */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative h-full w-full overflow-hidden">
         {activeTab === "explorer" && <DashboardExplorer />}
         {activeTab === "analysis" && <DashboardAnalysis />}
         {activeTab === "monitor" && <DashboardMonitor />}

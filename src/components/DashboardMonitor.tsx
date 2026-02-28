@@ -30,10 +30,28 @@ export default function DashboardMonitor() {
   const [target, setTarget] = useState<[number, number] | null>(null);
   const [petaDesa, setPetaDesa] = useState<any>(null);
 
-  // Ambil data detail perangkat yang sedang dipilih dari list devices
+  // Ambil data detail perangkat yang sedang dipilih dari list stations, gabungkan dengan live data
   const selectedDevice = useMemo(() => {
-    return devices.find(d => d.id === selectedId) || null;
-  }, [devices, selectedId]);
+    if (!selectedId) return null;
+    const station = stations.find(s => s.id === selectedId || s.sensor_code === selectedId || s.name === selectedId);
+    const live = devices.find(d => d.id === selectedId || (station && d.id === station.sensor_code));
+    
+    if (station) {
+       return {
+         id: station.name,
+         sensor_code: station.sensor_code,
+         type: station.type || "unknown",
+         lastValue: live ? live.lastValue : 0,
+         battery: live ? live.battery : 0,
+         wifi: live ? live.wifi : 0,
+         cpuTemp: live ? live.cpuTemp : 0,
+         history: live ? live.history : [],
+         isLive: !!live,
+         updatedAt: live ? live.updatedAt : station.updated_at
+       };
+    }
+    return live || null;
+  }, [stations, devices, selectedId]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -65,8 +83,12 @@ export default function DashboardMonitor() {
   }, [fetchData]);
 
   const getIcon = (d: any) => {
-    const isDanger = d.type === "flood" ? d.lastValue > 200 : d.lastValue > 10;
-    const color = isDanger ? '#ef4444' : '#10b981';
+    // Check if live data exists
+    const live = devices.find(x => x.id === d.sensor_code);
+    const isOffline = !live;
+    const isDanger = live ? (d.type === "flood" ? live.lastValue > 200 : live.lastValue > 10) : false;
+    
+    const color = isOffline ? '#94a3b8' : (isDanger ? '#ef4444' : '#10b981');
     const iconFile =
       d.type === "flood"
         ? "simple-water-level-station-svgrepo-com.svg"
@@ -74,8 +96,19 @@ export default function DashboardMonitor() {
           ? "warning-steep-slope-failure-landslide-svgrepo-com.svg"
           : "wireless-early-warning-broadcast-station-svgrepo-com.svg";
     
+    // Check if there's a custom icon from description
+    let customIcon = iconFile;
+    try {
+       const meta = JSON.parse(d.description || "{}");
+       if (meta.icon && meta.icon.includes(".svg")) {
+          // Extract filename if full path
+          customIcon = meta.icon.split('/').pop();
+       }
+    } catch (e) {}
+
     const svgHtml = `
-      <div style="position: relative; width: 40px; height: 50px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+      <div style="position: relative; width: 40px; height: 50px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); ${isOffline ? 'opacity: 0.7; filter: grayscale(100%);' : ''}">
+        ${!isOffline ? `
         <style>
           @keyframes ewsPulse {
             0% { transform: scale(0.9); opacity: 0.75; }
@@ -83,14 +116,16 @@ export default function DashboardMonitor() {
             100% { transform: scale(0.9); opacity: 0.0; }
           }
         </style>
+        ` : ''}
         <svg width="40" height="50" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M20 0C9.096 0 0.25 8.954 0.25 20C0.25 34.25 20 49.75 20 49.75C20 49.75 39.75 34.25 39.75 20C39.75 8.954 30.904 0 20 0Z" fill="${color}"/>
           <circle cx="20" cy="20" r="14" fill="rgba(255,255,255,0.2)"/>
         </svg>
         <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-          <img src="/sungai/svg/${iconFile}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+          <img src="/sungai/svg/${customIcon}" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" onError="this.src='/sungai/svg/wireless-early-warning-broadcast-station-svgrepo-com.svg'" />
         </div>
-        ${isDanger ? '<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #ef4444; border: 2px solid white;"></div><div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: rgba(239,68,68,0.6); animation: ewsPulse 1.5s infinite; pointer-events: none;"></div>' : ''}
+        ${isDanger && !isOffline ? '<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #ef4444; border: 2px solid white;"></div><div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: rgba(239,68,68,0.6); animation: ewsPulse 1.5s infinite; pointer-events: none;"></div>' : ''}
+        ${isOffline ? '<div style="position: absolute; top: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #64748b; border: 2px solid white;"></div>' : ''}
       </div>
     `;
 
@@ -103,9 +138,8 @@ export default function DashboardMonitor() {
     });
   };
 
-  const getDevicePosition = (deviceId: string): [number, number] => {
-    const station = stations.find(s => s.sensor_code === deviceId || s.name === deviceId);
-    if (station) return [station.latitude, station.longitude];
+  const getDevicePosition = (station: any): [number, number] => {
+    if (station && station.latitude && station.longitude) return [station.latitude, station.longitude];
     return [-7.36, 109.68];
   };
 
@@ -127,17 +161,22 @@ export default function DashboardMonitor() {
           {!selectedId ? (
             <div className="space-y-2">
               <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Nodes</h4>
-              {devices.length === 0 ? <p className="text-center p-10 text-[10px] italic opacity-40">Awaiting device signal...</p> : 
-                devices.map((d: any) => (
-                  <button key={d.id} onClick={() => { setSelectedId(d.id); setTarget(getDevicePosition(d.id)); }} className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-green-500 hover:bg-green-50 transition-all mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                      <span className="font-black text-slate-700 text-xs uppercase">{d.id}</span>
-                      <span className="ml-auto text-[9px] font-black text-slate-400">{d.wifi} dBm</span>
-                    </div>
-                    <div className="mt-2 text-[9px] font-bold text-slate-400 uppercase">VALUE: {d.lastValue} • BAT: {d.battery}%</div>
-                  </button>
-                ))
+              {stations.length === 0 ? <p className="text-center p-10 text-[10px] italic opacity-40">No devices configured...</p> : 
+                stations.map((s: any) => {
+                  const live = devices.find(d => d.id === s.sensor_code);
+                  return (
+                    <button key={s.id} onClick={() => { setSelectedId(s.sensor_code); setTarget(getDevicePosition(s)); }} className="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-green-500 hover:bg-green-50 transition-all mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${live ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                        <span className="font-black text-slate-700 text-xs uppercase">{s.name} ({s.sensor_code})</span>
+                        {live && <span className="ml-auto text-[9px] font-black text-slate-400">{live.wifi} dBm</span>}
+                      </div>
+                      <div className="mt-2 text-[9px] font-bold text-slate-400 uppercase">
+                        {live ? `VALUE: ${live.lastValue} • BAT: ${live.battery}%` : 'OFFLINE / NO SIGNAL'}
+                      </div>
+                    </button>
+                  );
+                })
               }
             </div>
           ) : (
@@ -237,9 +276,9 @@ export default function DashboardMonitor() {
               }}
             />
           )}
-          {devices.map((d: any) => (
-            <Marker key={d.id} position={getDevicePosition(d.id)} icon={getIcon(d)} eventHandlers={{ click: () => { setSelectedId(d.id); setTarget(getDevicePosition(d.id)); } }}>
-              <Popup><div className="text-[10px] font-black uppercase">{d.id}</div></Popup>
+          {stations.map((s: any) => (
+            <Marker key={s.id} position={getDevicePosition(s)} icon={getIcon(s)} eventHandlers={{ click: () => { setSelectedId(s.sensor_code); setTarget(getDevicePosition(s)); } }}>
+              <Popup><div className="text-[10px] font-black uppercase">{s.name} ({s.sensor_code})</div></Popup>
             </Marker>
           ))}
         </MapContainer>

@@ -10,11 +10,18 @@ import { AlertTriangle, BellRing, ShieldAlert, Wifi, Database as DatabaseIcon, L
 import { useRouter } from "next/navigation";
 
 // Helper for marker icons
-const createMarkerIcon = (color: string, icon: string) => L.divIcon({
-  className: "admin-marker-icon",
-  html: `<div style="background-color:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.3);"><i class="fa-solid ${icon}"></i></div>`,
-  iconSize: [28, 28], iconAnchor: [14, 14]
-});
+const createMarkerIcon = (color: string, icon: string) => {
+  const isSvg = icon.includes(".svg") || icon.includes("/");
+  const content = isSvg 
+    ? `<img src="${icon}" style="width:16px;height:16px;filter:brightness(0) invert(1);" />`
+    : `<i class="fa-solid ${icon}"></i>`;
+
+  return L.divIcon({
+    className: "admin-marker-icon",
+    html: `<div style="background-color:${color};width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${content}</div>`,
+    iconSize: [28, 28], iconAnchor: [14, 14]
+  });
+};
 
 // Drawing Component
 function DrawingHandler({ active, type, onAddPoint, points, onFinish }: any) {
@@ -177,7 +184,17 @@ export default function DashboardAdmin() {
         fetch("/sungai/api/reports"), fetch("/sungai/api/admin/devices"), fetch("/sungai/api/admin/features")
       ]);
       setReports(await repRes.json());
-      setDevices(await devRes.json());
+      const rawDevices = await devRes.json();
+      setDevices(rawDevices.map((d: any) => {
+        try {
+          // Coba parse description sebagai JSON untuk metadata tambahan
+          const meta = JSON.parse(d.description);
+          if (typeof meta === 'object') {
+             return { ...d, ...meta, description: meta.desc || d.description }; 
+          }
+          return d;
+        } catch (e) { return d; }
+      }));
       setFeatures(await featRes.json());
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -236,14 +253,68 @@ export default function DashboardAdmin() {
   };
 
   const [formData, setFormData] = useState<any>({});
-  const handleSave = async () => {
+
+  const generateSerial = () => {
+    const type = formData.type || "Longsor";
+    const prefix = type === "Banjir" ? "EWS-BJR" : type === "Longsor" ? "EWS-LGS" : type === "Gempa Bumi" ? "EWS-GMP" : type === "CCTV" ? "EWS-CAM" : "EWS-GEN";
+    const random = Math.floor(100 + Math.random() * 900); // 3 digit random
+    setFormData({...formData, sensor_code: `${prefix}-${random}`});
+  };
+
+  const downloadFirmware = async () => {
+    const type = formData.type;
+    let file = "";
+    if (type === "Banjir") file = "ews_banjir_esp32.ino";
+    else if (type === "Longsor") file = "ews_longsor_esp32wrover.ino";
+    else if (type === "Gempa Bumi") file = "ews_gempa_esp8266.ino";
+    else if (type === "CCTV") file = "ews_cctv_esp32cam.ino";
+    
+    if (!file) {
+      alert("Firmware belum tersedia untuk tipe perangkat ini.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/sungai/firmware/${file}`);
+      if (!res.ok) throw new Error("File firmware tidak ditemukan");
+      let text = await res.text();
+      
+      // Replace placeholder with actual data
+      text = text.replace("{{SENSOR_CODE}}", formData.sensor_code || "EWS-XXX-000");
+      
+      // Trigger download
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${formData.sensor_code || "firmware"}.ino`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert("Gagal mendownload firmware: " + e);
+    }
+  };
+
+  const handleSave = async (e: any) => {
     if (drawingPoints.length === 0) return alert("Tentukan lokasi!");
     setLoading(true);
     try {
       const endpoint = activeTab === "reports" ? "/sungai/api/reports" : (activeTab === "devices" ? "/sungai/api/admin/devices" : "/sungai/api/admin/features");
       const payload = { ...formData, lat: drawingPoints[0]?.[0], lng: drawingPoints[0]?.[1] };
       if (activeTab === "features") payload.geometry = JSON.stringify({ type: formData.type, coordinates: drawingPoints.map((p:any)=>[p[1],p[0]]) });
-      if (activeTab === "devices") { payload.latitude = drawingPoints[0][0]; payload.longitude = drawingPoints[0][1]; }
+      if (activeTab === "devices") { 
+        payload.latitude = drawingPoints[0][0]; 
+        payload.longitude = drawingPoints[0][1];
+        // Simpan metadata tambahan ke dalam description sebagai JSON
+        payload.description = JSON.stringify({
+          desc: formData.description || "",
+          icon: formData.icon,
+          color: formData.color,
+          is_ews: formData.is_ews
+        });
+      }
       
       const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (res.ok) { setIsEditing(false); loadData(); setSelected(null); }
@@ -260,7 +331,59 @@ export default function DashboardAdmin() {
     { id: "fa-location-dot", label: "Marker" }, { id: "fa-house", label: "Rumah" }, { id: "fa-building", label: "Gedung" },
     { id: "fa-hospital", label: "RS/Klinik" }, { id: "fa-school", label: "Sekolah" }, { id: "fa-mosque", label: "Masjid" },
     { id: "fa-bridge", label: "Jembatan" }, { id: "fa-road", label: "Jalan" }, { id: "fa-water", label: "Air/Sungai" },
-    { id: "fa-triangle-exclamation", label: "Bahaya" }, { id: "fa-fire", label: "Api" }, { id: "fa-flag", label: "Titik Penting" }
+    { id: "fa-triangle-exclamation", label: "Bahaya" }, { id: "fa-fire", label: "Api" }, { id: "fa-flag", label: "Titik Penting" },
+    
+    // SVG Icons
+    { id: "/sungai/svg/abducted-man-svgrepo-com.svg", label: "Orang Hilang/Culikan" },
+    { id: "/sungai/svg/aid-svgrepo-com.svg", label: "Bantuan/Logistik" },
+    { id: "/sungai/svg/atm-svgrepo-com.svg", label: "ATM/Bank" },
+    { id: "/sungai/svg/automatic-monitoring-station-svgrepo-com.svg", label: "Monitoring/CCTV" },
+    { id: "/sungai/svg/biohazard-solid-full.svg", label: "Bahaya Biologis" },
+    { id: "/sungai/svg/clinic-medical-svgrepo-com.svg", label: "Klinik Medis" },
+    { id: "/sungai/svg/cloud-bolt-solid-full.svg", label: "Petir/Cuaca Buruk" },
+    { id: "/sungai/svg/crossing-road-caution-svgrepo-com.svg", label: "Hati-hati Jalan" },
+    { id: "/sungai/svg/danger-zone-svgrepo-com.svg", label: "Zona Bahaya" },
+    { id: "/sungai/svg/data-collection-svgrepo-com.svg", label: "Data Center/Server" },
+    { id: "/sungai/svg/disaster-svgrepo-com.svg", label: "Bencana Alam" },
+    { id: "/sungai/svg/disaster-water-point-svgrepo-com.svg", label: "Titik Air Bencana" },
+    { id: "/sungai/svg/earthquake-svgrepo-com.svg", label: "Gempa Bumi" },
+    { id: "/sungai/svg/emergency-kit-svgrepo-com.svg", label: "P3K/Darurat" },
+    { id: "/sungai/svg/fire-svgrepo-com.svg", label: "Pemadam Kebakaran" },
+    { id: "/sungai/svg/flood-svgrepo-com.svg", label: "Banjir" },
+    { id: "/sungai/svg/fuel-gas-station-svgrepo-com.svg", label: "SPBU/Bahan Bakar" },
+    { id: "/sungai/svg/hill-avalanche-solid-full.svg", label: "Longsor Salju/Tanah" },
+    { id: "/sungai/svg/hill-rockslide-solid-full.svg", label: "Batu Jatuh" },
+    { id: "/sungai/svg/hospital-svgrepo-com.svg", label: "Rumah Sakit" },
+    { id: "/sungai/svg/hotel-man-1-svgrepo-com.svg", label: "Penginapan/Posko" },
+    { id: "/sungai/svg/house-chimney-crack-solid-full.svg", label: "Rumah Rusak" },
+    { id: "/sungai/svg/house-flood-water-solid-full.svg", label: "Rumah Terendam" },
+    { id: "/sungai/svg/internet-3-svgrepo-com.svg", label: "Internet/Router" },
+    { id: "/sungai/svg/irrigation-area-svgrepo-com.svg", label: "Irigasi" },
+    { id: "/sungai/svg/lake-svgrepo-com.svg", label: "Danau" },
+    { id: "/sungai/svg/landslide-svgrepo-com.svg", label: "Tanah Longsor" },
+    { id: "/sungai/svg/large-scale-livestock-and-poultry-farms-svgrepo-com.svg", label: "Peternakan" },
+    { id: "/sungai/svg/mosque-svgrepo-com.svg", label: "Masjid" },
+    { id: "/sungai/svg/outline-of-residential-places-svgrepo-com.svg", label: "Pemukiman" },
+    { id: "/sungai/svg/parking-svgrepo-com.svg", label: "Parkir" },
+    { id: "/sungai/svg/person-drowning-solid-full.svg", label: "Orang Tenggelam" },
+    { id: "/sungai/svg/place-svgrepo-com.svg", label: "Command Center/Markas" },
+    { id: "/sungai/svg/pond-dam-project-svgrepo-com.svg", label: "Proyek Bendungan" },
+    { id: "/sungai/svg/radiation-solid-full.svg", label: "Radiasi" },
+    { id: "/sungai/svg/resettlement-point-svgrepo-com.svg", label: "Titik Pengungsian" },
+    { id: "/sungai/svg/restaurant-svgrepo-com.svg", label: "Dapur Umum/Restoran" },
+    { id: "/sungai/svg/simple-water-level-station-svgrepo-com.svg", label: "Pos Duga Air" },
+    { id: "/sungai/svg/sluice-svgrepo-com.svg", label: "Pintu Air" },
+    { id: "/sungai/svg/street-light-svgrepo-com.svg", label: "Lampu Jalan" },
+    { id: "/sungai/svg/the-dam-svgrepo-com.svg", label: "Bendungan Besar" },
+    { id: "/sungai/svg/tower-transmissions-svgrepo-com.svg", label: "Sutet/Transmisi" },
+    { id: "/sungai/svg/tower-with-signal-svgrepo-com.svg", label: "Tower Sinyal/LoRa" },
+    { id: "/sungai/svg/traffic-sign-bold-svgrepo-com.svg", label: "Rambu Lalu Lintas" },
+    { id: "/sungai/svg/transfer-route-svgrepo-com.svg", label: "Jalur Evakuasi" },
+    { id: "/sungai/svg/volcano-svgrepo-com.svg", label: "Gunung Berapi" },
+    { id: "/sungai/svg/warning-steep-slope-failure-landslide-svgrepo-com.svg", label: "Peringatan Longsor" },
+    { id: "/sungai/svg/water-level-station-svgrepo-com.svg", label: "Stasiun TMA" },
+    { id: "/sungai/svg/wind-solid-full.svg", label: "Angin Kencang" },
+    { id: "/sungai/svg/wireless-early-warning-broadcast-station-svgrepo-com.svg", label: "EWS Broadcast" }
   ];
 
   const COLOR_PICKER = [
@@ -373,6 +496,87 @@ export default function DashboardAdmin() {
                     </div>
                     <textarea value={formData.desc || ""} onChange={e=>setFormData({...formData, desc: e.target.value})} placeholder="Deskripsi kejadian..." className="w-full p-4 bg-slate-50 rounded-xl text-xs font-bold text-slate-900 h-24" />
                   </div>
+                ) : activeTab === "devices" ? (
+                  <div className="space-y-4">
+                     {/* EWS Toggle / Dropdown */}
+                     <div>
+                       <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Kategori Perangkat</label>
+                       <select value={formData.is_ews ? "ews" : "non_ews"} onChange={e => setFormData({...formData, is_ews: e.target.value === "ews"})} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-900 border-2">
+                         <option value="ews">Early Warning System (EWS)</option>
+                         <option value="non_ews">Perangkat Umum (Non-EWS)</option>
+                       </select>
+                     </div>
+
+                     {/* Jenis EWS */}
+                     <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Jenis Perangkat / EWS</label>
+                        <select value={formData.type || "Longsor"} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-900 border-2">
+                           {Object.keys(DISASTER_MAP).map(k => <option key={k} value={k}>{k}</option>)}
+                           <option value="CCTV">CCTV</option>
+                           <option value="Sirine">Sirine</option>
+                           <option value="Gateway">Gateway</option>
+                           <option value="Akses Point">Akses Point</option>
+                           <option value="LoRa Gateway">LoRa Gateway</option>
+                           <option value="LoRa Relay">LoRa Relay</option>
+                           <option value="Server">Server</option>
+                           <option value="Router">Router</option>
+                           <option value="Camera">Camera</option>
+                           <option value="Command Center">Command Center</option>
+                           <option value="Lainnya">Lainnya</option>
+                         </select>
+                     </div>
+
+                     {/* Seri EWS */}
+                     <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Nomor Seri / Kode</label>
+                        <div className="flex gap-2">
+                           <input value={formData.sensor_code || ""} onChange={e => setFormData({...formData, sensor_code: e.target.value})} className="w-full px-4 py-3 rounded-xl border-2 text-xs font-bold text-slate-900" placeholder="Contoh: EWS-LGS-001" />
+                           <button onClick={generateSerial} className="px-3 py-2 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-600 hover:bg-slate-200">Generate</button>
+                        </div>
+                     </div>
+
+                     {/* Firmware Download */}
+                     {["Banjir", "Longsor", "Gempa Bumi", "CCTV"].includes(formData.type) && (
+                        <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                          <h4 className="text-[10px] font-black text-indigo-800 uppercase mb-2">Firmware ESP32/ESP8266</h4>
+                          <p className="text-[9px] text-indigo-600 mb-3 leading-relaxed">
+                             Download skrip .ino yang sudah dikonfigurasi dengan ID Perangkat di atas. 
+                             Pastikan Library <b>WiFi</b> dan <b>HTTPClient</b> sudah terinstall di Arduino IDE.
+                          </p>
+                          <button onClick={downloadFirmware} className="w-full py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 flex items-center justify-center gap-2">
+                             <i className="fa-solid fa-download"></i> Download Skrip .INO
+                          </button>
+                        </div>
+                     )}
+
+                     {/* Pilihan Icon */}
+                     <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Ikon Marker</label>
+                        <div className="grid grid-cols-6 gap-2 bg-slate-50 p-2 rounded-xl border">
+                          {ICON_PICKER.map(ico => (
+                            <button key={ico.id} type="button" onClick={() => setFormData({...formData, icon: ico.id})} className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${formData.icon === ico.id ? 'bg-indigo-600 text-white shadow-lg scale-110' : 'bg-white text-slate-400 hover:bg-indigo-50'}`} title={ico.label}>
+                              {ico.id.includes('/') || ico.id.includes('.svg') ? (
+                                <img src={ico.id} className={`w-4 h-4 ${formData.icon === ico.id ? 'brightness-0 invert' : ''}`} />
+                              ) : (
+                                <i className={`fa-solid ${ico.id} text-xs`}></i>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                     </div>
+
+                     {/* Warna EWS */}
+                     <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">Warna Marker</label>
+                        <div className="flex gap-2 bg-slate-50 p-2 rounded-xl border overflow-x-auto">
+                          {COLOR_PICKER.map(col => (
+                            <button key={col.id} type="button" onClick={() => setFormData({...formData, color: col.id})} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${formData.color === col.id ? 'border-slate-900 scale-110 shadow-md' : 'border-transparent hover:scale-105'}`} style={{backgroundColor: col.id}}>
+                              {formData.color === col.id && <CheckCircle2 className="w-4 h-4 text-white" />}
+                            </button>
+                          ))}
+                        </div>
+                     </div>
+                  </div>
                 ) : (
                   <>
                     <div className="grid grid-cols-2 gap-3">
@@ -474,7 +678,12 @@ export default function DashboardAdmin() {
             const statusColor = r.status === 'Ditangani' ? '#10b981' : (r.status === 'Proses Validasi' ? '#f59e0b' : '#ef4444');
             return <Marker key={r.id} position={[r.lat, r.lng]} icon={L.divIcon({ className: "report-marker", html: `<div style="background-color:${config.color};width:32px;height:32px;border-radius:50%;border:3px solid ${statusColor};display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 4px 10px rgba(0,0,0,0.3);position:relative;"><i class="fa-solid ${config.icon} text-xs"></i>${r.status === 'Ditangani' ? '<div style="position:absolute;top:-4px;right:-4px;background:#10b981;width:14px;height:14px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:8px;"><i class="fa-solid fa-check"></i></div>' : ''}</div>`, iconSize: [32, 32], iconAnchor: [16, 16] })} eventHandlers={{ click: () => setSelected(r) }} />;
           })}
-          {activeTab === "devices" && devices.map((d: any) => <Marker key={d.id} position={[d.latitude, d.longitude]} icon={createMarkerIcon('#10b981', 'fa-water')} eventHandlers={{ click: () => setSelected(d) }} />)}
+          {activeTab === "devices" && devices.map((d: any) => {
+            const defaultColor = String(d.type).toLowerCase() === 'flood' ? '#3b82f6' : '#8b5cf6';
+            const icon = d.icon || 'fa-water'; 
+            const color = d.color || defaultColor;
+            return <Marker key={d.id} position={[d.latitude, d.longitude]} icon={createMarkerIcon(color, icon)} eventHandlers={{ click: () => setSelected(d) }} />;
+          })}
         </MapContainer>
       </main>
     </div>
